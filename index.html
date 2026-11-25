@@ -6,7 +6,8 @@
   <title>당구 마스터 - 3구 & 4구 3D 캐롬 당구</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; user-select: none; -webkit-user-select: none; font-family: 'Noto Sans KR', sans-serif; }
@@ -61,7 +62,7 @@
           </button>
           <button type="button" data-play="online" class="play-mode-btn text-left p-3.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-slate-500 transition">
             <div class="font-bold text-white mb-0.5">🌐 온라인 대전</div>
-            <div class="text-xs text-slate-300">다른 PC와 방 코드로 연결</div>
+            <div class="text-xs text-slate-300">Firebase 방 코드로 실시간 대전</div>
           </button>
         </div>
       </div>
@@ -148,6 +149,27 @@
   </div>
 
   <script>
+    // --- Firebase 설정 (본인 프로젝트 값으로 교체하세요) ---
+    const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCu-TvMUTc-da_lMP-2C3CwlMO_YXJxicA",
+  authDomain: "billiards-master-bd219.firebaseapp.com",
+  databaseURL: "https://billiards-master-bd219-default-rtdb.firebaseio.com",
+  projectId: "billiards-master-bd219",
+  storageBucket: "billiards-master-bd219.firebasestorage.app",
+  messagingSenderId: "563659358498",
+  appId: "1:563659358498:web:710c249db32f7fa92c657b"
+};
+```[cite: 7]
+    let db = null;
+    try {
+      if (!FIREBASE_CONFIG.apiKey.startsWith("YOUR_")) {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+      }
+    } catch (e) {
+      console.error("Firebase 초기화 오류:", e);
+    }
+
     // --- 목표 점수 10 ~ 1000 (10점 단위) ---
     const targetSelect = document.getElementById('target-score-select');
     for (let s = 10; s <= 1000; s += 10) {
@@ -170,13 +192,15 @@
       isHost: false,
       myRole: 0, // 0 or 1 in online
       resetToken: 0,
+      lastShotSeq: 0,
+      lastTurnSeq: 0,
       showGuide: true,
       topView: false,
       aimAngle: 0,
       aimPower: 0,
       isPulling: false,
       pullStart: { x: 0, y: 0 },
-      tip: { x: 0, y: 0 }, // -0.75 ~ +0.75
+      tip: { x: 0, y: 0 },
       elevationDeg: 0,
       phase: 'aiming', // 'aiming' | 'moving' | 'gameover'
       shotStats: {
@@ -188,94 +212,160 @@
       }
     };
 
-    // --- PeerJS 온라인 통신 관리 ---
+    // --- Firebase Realtime Database 통신 관리 ---
     const net = {
-      peer: null,
-      conn: null,
       roomCode: '',
+      roomRef: null,
       connected: false,
-      reset() {
-        if (this.conn) { try { this.conn.close(); } catch (e) {} this.conn = null; }
-        if (this.peer) { try { this.peer.destroy(); } catch (e) {} this.peer = null; }
-        this.roomCode = '';
+      matchStarted: false,
+      detachListeners() {
+        if (this.roomRef) {
+          this.roomRef.off();
+          this.roomRef = null;
+        }
         this.connected = false;
+        this.matchStarted = false;
+        this.roomCode = '';
         updateNetStatus('방 만들기를 누르거나 상대 방 코드를 입력해 연결하세요.');
       },
-      createRoom() {
-        this.reset();
+      ensureDb() {
+        if (!db) {
+          updateNetStatus('Firebase 설정(FIREBASE_CONFIG)을 먼저 입력해 주세요.');
+          return false;
+        }
+        return true;
+      },
+      async createRoom() {
+        if (!this.ensureDb()) return;
+        this.detachListeners();
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
         for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+
         this.roomCode = code;
         state.isHost = true;
         state.myRole = 0;
         state.waitingForOpponent = true;
-        updateNetStatus(`방 코드 [${code}] 생성 중...`);
+        state.lastShotSeq = 0;
+        state.lastTurnSeq = 0;
 
-        this.peer = new Peer('BM3D-' + code);
-        this.peer.on('open', () => {
-          document.getElementById('room-code-box').classList.remove('hidden');
-          document.getElementById('room-code-box').classList.add('flex');
-          document.getElementById('room-code-display').textContent = code;
-          updateNetStatus(`방 [${code}] 생성 완료! 상대방 입장을 기다리는 중 (지금은 연습 샷 가능)`);
+        this.roomRef = db.ref('rooms/' + code);
+        await this.roomRef.set({
+          createdAt: Date.now(),
+          hostJoined: true,
+          guestJoined: false,
+          gameMode: state.gameMode,
+          targetScore: state.targetScore,
+          resetToken: 0,
+          shot: null,
+          turnSync: null
         });
-        this.peer.on('connection', (connection) => {
-          this.conn = connection;
-          this.setupConn();
-        });
-        this.peer.on('error', (err) => {
-          updateNetStatus('연결 오류: ' + (err.type || err.message));
+
+        document.getElementById('room-code-box').classList.remove('hidden');
+        document.getElementById('room-code-box').classList.add('flex');
+        document.getElementById('room-code-display').textContent = code;
+        updateNetStatus(`방 [${code}] 생성 완료! 상대방 입장을 기다리는 중 (지금은 연습 샷 가능)`);
+
+        this.roomRef.on('value', (snap) => {
+          const data = snap.val();
+          if (!data) return;
+          if (data.guestJoined && !this.connected) {
+            this.connected = true;
+            state.waitingForOpponent = false;
+            updateNetStatus('상대방이 입장했습니다! 경기를 시작합니다.');
+            if (!this.matchStarted) {
+              this.matchStarted = true;
+              state.resetToken = (data.resetToken || 0) + 1;
+              applyBallLayout(state.gameMode);
+              const initPayload = {
+                resetToken: state.resetToken,
+                gameMode: state.gameMode,
+                targetScore: state.targetScore,
+                scores: [0, 0],
+                inning: 1,
+                activePlayer: 0,
+                balls: serializeBalls(),
+                seq: Date.now()
+              };
+              this.roomRef.update({
+                resetToken: state.resetToken,
+                matchInit: initPayload
+              });
+              startMatchState(initPayload);
+              closeStartModalAndEnterGame();
+              showToast('상대방과 연결되어 온라인 경기가 시작되었습니다!');
+            }
+          }
+          if (data.shot && data.shot.seq && data.shot.seq > state.lastShotSeq && data.shot.by !== state.myRole) {
+            state.lastShotSeq = data.shot.seq;
+            executeShot(data.shot.angle, data.shot.power, data.shot.tipX, data.shot.tipY, data.shot.elevDeg, true);
+          }
+          if (data.turnSync && data.turnSync.seq && data.turnSync.seq > state.lastTurnSeq) {
+            state.lastTurnSeq = data.turnSync.seq;
+            applyTurnSyncFromRemote(data.turnSync);
+          }
         });
       },
-      joinRoom(codeInput) {
+      async joinRoom(codeInput) {
+        if (!this.ensureDb()) return;
         const code = (codeInput || '').trim().toUpperCase();
         if (!code) { updateNetStatus('방 코드를 입력해 주세요.'); return; }
-        this.reset();
+        this.detachListeners();
+
         this.roomCode = code;
         state.isHost = false;
         state.myRole = 1;
         state.waitingForOpponent = true;
-        updateNetStatus(`방 [${code}]에 접속 중...`);
+        state.lastShotSeq = 0;
+        state.lastTurnSeq = 0;
 
-        this.peer = new Peer();
-        this.peer.on('open', () => {
-          this.conn = this.peer.connect('BM3D-' + code, { reliable: true });
-          this.setupConn();
-        });
-        this.peer.on('error', (err) => {
-          updateNetStatus('접속 실패: 방 코드를 확인해 주세요 (' + (err.type || '') + ')');
-        });
-      },
-      setupConn() {
-        this.conn.on('open', () => {
-          this.connected = true;
-          state.waitingForOpponent = false;
-          updateNetStatus('상대방과 연결되었습니다!');
-          if (state.isHost) {
-            state.resetToken += 1;
-            const initPayload = {
-              type: 'match_init',
-              resetToken: state.resetToken,
-              gameMode: state.gameMode,
-              targetScore: state.targetScore,
-              balls: serializeBalls()
-            };
-            this.send(initPayload);
-            startMatchFromHost(initPayload);
-          }
-          closeStartModalAndEnterGame();
-        });
-        this.conn.on('data', (msg) => handleNetMessage(msg));
-        this.conn.on('close', () => {
-          this.connected = false;
-          showToast('상대방 연결이 종료되었습니다.');
-          updateTurnBanner();
-        });
-      },
-      send(data) {
-        if (this.conn && this.conn.open) {
-          this.conn.send(data);
+        this.roomRef = db.ref('rooms/' + code);
+        const snap = await this.roomRef.get();
+        if (!snap.exists()) {
+          updateNetStatus(`방 [${code}]을 찾을 수 없습니다. 방 코드를 확인해 주세요.`);
+          return;
         }
+
+        await this.roomRef.update({ guestJoined: true });
+        this.connected = true;
+        state.waitingForOpponent = false;
+        updateNetStatus(`방 [${code}]에 연결되었습니다!`);
+
+        this.roomRef.on('value', (s) => {
+          const data = s.val();
+          if (!data) return;
+          if (data.matchInit && data.matchInit.resetToken && data.matchInit.resetToken !== state.resetToken) {
+            state.resetToken = data.matchInit.resetToken;
+            this.matchStarted = true;
+            startMatchState(data.matchInit);
+            closeStartModalAndEnterGame();
+            showToast('온라인 경기가 시작되었습니다!');
+          }
+          if (data.shot && data.shot.seq && data.shot.seq > state.lastShotSeq && data.shot.by !== state.myRole) {
+            state.lastShotSeq = data.shot.seq;
+            executeShot(data.shot.angle, data.shot.power, data.shot.tipX, data.shot.tipY, data.shot.elevDeg, true);
+          }
+          if (data.turnSync && data.turnSync.seq && data.turnSync.seq > state.lastTurnSeq) {
+            state.lastTurnSeq = data.turnSync.seq;
+            applyTurnSyncFromRemote(data.turnSync);
+          }
+        });
+      },
+      sendShot(payload) {
+        if (!this.roomRef || !this.connected) return;
+        const seq = Date.now();
+        state.lastShotSeq = seq;
+        this.roomRef.update({
+          shot: { ...payload, by: state.myRole, seq }
+        });
+      },
+      sendTurnSync(payload) {
+        if (!this.roomRef || !this.connected || !state.isHost) return;
+        const seq = Date.now();
+        state.lastTurnSeq = seq;
+        this.roomRef.update({
+          turnSync: { ...payload, seq }
+        });
       }
     };
 
@@ -332,7 +422,7 @@
     dirLight.shadow.mapSize.set(1024, 1024);
     scene.add(dirLight);
 
-    // 당구대 규격 (미터 단위 스케일: 가로 2.84m, 세로 1.42m)
+    // 당구대 규격 (가로 2.84m, 세로 1.42m)
     const TABLE_W = 2.84;
     const TABLE_H = 1.42;
     const HALF_W = TABLE_W / 2;
@@ -415,10 +505,10 @@
     }
 
     const balls = [
-      { id: 'white', name: '흰공', mesh: createBallMesh('#f8fafc', '#94a3b8'), pos: new THREE.Vector3(-0.7, BALL_R, 0.15), vel: new THREE.Vector3(), omega: new THREE.Vector3(), active: true },
-      { id: 'yellow', name: '노란공', mesh: createBallMesh('#facc15', '#ca8a04'), pos: new THREE.Vector3(-0.7, BALL_R, -0.15), vel: new THREE.Vector3(), omega: new THREE.Vector3(), active: true },
+      { id: 'white', name: '흰공', mesh: createBallMesh('#f8fafc', '#94a3b8'), pos: new THREE.Vector3(-0.72, BALL_R, 0.14), vel: new THREE.Vector3(), omega: new THREE.Vector3(), active: true },
+      { id: 'yellow', name: '노란공', mesh: createBallMesh('#facc15', '#ca8a04'), pos: new THREE.Vector3(-0.72, BALL_R, -0.14), vel: new THREE.Vector3(), omega: new THREE.Vector3(), active: true },
       { id: 'red1', name: '빨간공', mesh: createBallMesh('#ef4444', '#991b1b'), pos: new THREE.Vector3(0.55, BALL_R, 0), vel: new THREE.Vector3(), omega: new THREE.Vector3(), active: true },
-      { id: 'red2', name: '빨간공2', mesh: createBallMesh('#dc2626', '#7f1d1d'), pos: new THREE.Vector3(0.85, BALL_R, 0.22), vel: new THREE.Vector3(), omega: new THREE.Vector3(), active: true }
+      { id: 'red2', name: '빨간공2', mesh: createBallMesh('#dc2626', '#7f1d1d'), pos: new THREE.Vector3(0.82, BALL_R, 0.24), vel: new THREE.Vector3(), omega: new THREE.Vector3(), active: true }
     ];
     balls.forEach(b => scene.add(b.mesh));
 
@@ -535,14 +625,12 @@
       cueElevPivot.rotation.x = -elevRad;
       cueElevPivot.position.set(0, 0, pullOffset);
 
-      // 조준선 계산
       const dirX = Math.sin(state.aimAngle);
       const dirZ = Math.cos(state.aimAngle);
       const start = new THREE.Vector3(cueBall.pos.x, 0.005, cueBall.pos.z);
       let end = new THREE.Vector3(start.x + dirX * 1.4, 0.005, start.z + dirZ * 1.4);
       let hitTarget = null;
 
-      // 벽 충돌 검사
       if (end.x > HALF_W - BALL_R) {
         const t = (HALF_W - BALL_R - start.x) / (dirX || 0.0001);
         if (t > 0) end = new THREE.Vector3(HALF_W - BALL_R, 0.005, start.z + dirZ * t);
@@ -558,7 +646,6 @@
         if (t > 0 && start.x + dirX * t <= end.x) end = new THREE.Vector3(start.x + dirX * t, 0.005, -HALF_H + BALL_R);
       }
 
-      // 공 충돌 예측
       let bestDist = start.distanceTo(end);
       for (let i = 0; i < balls.length; i++) {
         const b = balls[i];
@@ -603,7 +690,6 @@
       const elevRad = THREE.MathUtils.degToRad(elevDeg);
       const speed = clampedPower * 5.8;
 
-      // 스쿼트(회전 시 미세 편향)
       const squatShift = -tipX * clampedPower * 0.035;
       const finalAngle = angle + squatShift;
       const dirX = Math.sin(finalAngle);
@@ -613,7 +699,6 @@
       const vertSpeed = speed * Math.sin(elevRad) * 0.65;
 
       cueBall.vel.set(dirX * horizSpeed, vertSpeed, dirZ * horizSpeed);
-      // 당점 스핀 설정: tipY > 0 상단(전진), tipY < 0 하단(후진), tipX 좌우 회전
       const rightX = Math.cos(finalAngle);
       const rightZ = -Math.sin(finalAngle);
       cueBall.omega.set(
@@ -634,9 +719,8 @@
 
       playHitSound(clampedPower, false);
 
-      if (!fromRemote && state.playMode === 'online' && net.connected) {
-        net.send({
-          type: 'shot',
+      if (!fromRemote && state.playMode === 'online' && net.connected && !state.waitingForOpponent) {
+        net.sendShot({
           angle,
           power: clampedPower,
           tipX,
@@ -660,7 +744,6 @@
           const b = balls[i];
           if (!b.active) continue;
 
-          // 수직 이동
           if (b.pos.y > BALL_R || b.vel.y > 0) {
             b.vel.y -= gravity * h;
             b.pos.y += b.vel.y * h;
@@ -674,22 +757,18 @@
             }
           }
 
-          // 수평 이동
           b.pos.x += b.vel.x * h;
           b.pos.z += b.vel.z * h;
 
-          // 지면 접촉 시 마찰 및 미끄럼->구름 전이
           if (b.pos.y <= BALL_R + 0.0005) {
             const horizSpeed = Math.hypot(b.vel.x, b.vel.z);
             if (horizSpeed > 0.001) {
               const nx = b.vel.x / horizSpeed;
               const nz = b.vel.z / horizSpeed;
-              // 구름 회전 속도 근사치
               const rollOmegaMag = horizSpeed / BALL_R;
               const currentRollMag = Math.hypot(b.omega.x, b.omega.z);
               const isSliding = Math.abs(currentRollMag - rollOmegaMag) > 2.2;
 
-              // 마세(수직 회전축 omega.y가 있을 때 궤적 휨)
               if (Math.abs(b.omega.y) > 0.5) {
                 const curveFactor = b.omega.y * 0.018 * h;
                 const perpX = -nz;
@@ -710,7 +789,6 @@
                 b.vel.z *= ratio;
               }
 
-              // 회전 감쇠 및 동기화
               b.omega.x *= Math.pow(0.92, h * 60);
               b.omega.y *= Math.pow(0.95, h * 60);
               b.omega.z *= Math.pow(0.92, h * 60);
@@ -721,7 +799,6 @@
             }
           }
 
-          // 쿠션 충돌
           let hitCushion = false;
           const minX = -HALF_W + BALL_R;
           const maxX = HALF_W - BALL_R;
@@ -769,7 +846,6 @@
           }
         }
 
-        // 공 간 충돌
         for (let i = 0; i < balls.length; i++) {
           for (let j = i + 1; j < balls.length; j++) {
             const a = balls[i];
@@ -798,7 +874,6 @@
                 a.vel.x -= impulse * nx; a.vel.y -= impulse * ny; a.vel.z -= impulse * nz;
                 c.vel.x += impulse * nx; c.vel.y += impulse * ny; c.vel.z += impulse * nz;
 
-                // 스로우(회전에 의한 측면 편향)
                 const tx = -nz;
                 const tz = nx;
                 const throwMag = a.omega.y * 0.0015;
@@ -848,7 +923,6 @@
     }
 
     function evaluateTurnResult() {
-      // 대기 중 연습 모드면 점수/턴 변동 없이 바로 조준 복귀
       if (state.playMode === 'practice' || state.waitingForOpponent) {
         state.phase = 'aiming';
         updateTurnBanner();
@@ -870,7 +944,6 @@
           msg = `미득점 (적구 ${st.hitOrder.length}개 접촉, 쿠션 ${st.cushions}회)`;
         }
       } else {
-        // 4구
         if (st.hitOpponentCue) {
           delta = -10;
           msg = '상대 수구 접촉 파울! -10점';
@@ -891,6 +964,15 @@
       if (state.scores[pIdx] >= state.targetScore) {
         state.phase = 'gameover';
         updateTurnBanner(`${pIdx === 0 ? '1P (흰공)' : '2P (노란공)'} 승리! (${state.scores[pIdx]}점)`);
+        if (state.playMode === 'online' && net.connected && state.isHost) {
+          net.sendTurnSync({
+            scores: [...state.scores],
+            inning: state.inning,
+            activePlayer: state.activePlayer,
+            phase: state.phase,
+            balls: serializeBalls()
+          });
+        }
         return;
       }
 
@@ -902,10 +984,8 @@
       state.phase = 'aiming';
       updateTurnBanner();
 
-      // 온라인 호스트가 샷 종료 후 상태 동기화
       if (state.playMode === 'online' && net.connected && state.isHost) {
-        net.send({
-          type: 'turn_sync',
+        net.sendTurnSync({
           scores: [...state.scores],
           inning: state.inning,
           activePlayer: state.activePlayer,
@@ -915,42 +995,28 @@
       }
     }
 
-    function handleNetMessage(msg) {
-      if (!msg || !msg.type) return;
-      if (msg.type === 'match_init') {
-        state.resetToken = msg.resetToken;
-        state.gameMode = msg.gameMode;
-        state.targetScore = msg.targetScore;
-        state.scores = [0, 0];
-        state.inning = 1;
-        state.activePlayer = 0;
-        state.phase = 'aiming';
-        applySerializedBalls(msg.balls);
-        updateScoreHUD();
-        updateTurnBanner();
-        closeStartModalAndEnterGame();
-        showToast('온라인 경기가 시작되었습니다!');
-      } else if (msg.type === 'shot') {
-        executeShot(msg.angle, msg.power, msg.tipX, msg.tipY, msg.elevDeg, true);
-      } else if (msg.type === 'turn_sync') {
-        state.scores = [...msg.scores];
-        state.inning = msg.inning;
-        state.activePlayer = msg.activePlayer;
-        state.phase = msg.phase;
-        applySerializedBalls(msg.balls);
-        updateScoreHUD();
-        updateTurnBanner();
-      }
+    function applyTurnSyncFromRemote(sync) {
+      state.scores = Array.isArray(sync.scores) ? [...sync.scores] : state.scores;
+      state.inning = sync.inning || state.inning;
+      state.activePlayer = typeof sync.activePlayer === 'number' ? sync.activePlayer : state.activePlayer;
+      state.phase = sync.phase || 'aiming';
+      applySerializedBalls(sync.balls);
+      updateScoreHUD();
+      updateTurnBanner();
     }
 
-    function startMatchFromHost(payload) {
-      state.gameMode = payload.gameMode;
-      state.targetScore = payload.targetScore;
-      state.scores = [0, 0];
-      state.inning = 1;
-      state.activePlayer = 0;
+    function startMatchState(payload) {
+      state.gameMode = payload.gameMode || state.gameMode;
+      state.targetScore = payload.targetScore || state.targetScore;
+      state.scores = Array.isArray(payload.scores) ? [...payload.scores] : [0, 0];
+      state.inning = payload.inning || 1;
+      state.activePlayer = typeof payload.activePlayer === 'number' ? payload.activePlayer : 0;
       state.phase = 'aiming';
-      applyBallLayout(state.gameMode);
+      if (payload.balls) {
+        applySerializedBalls(payload.balls);
+      } else {
+        applyBallLayout(state.gameMode);
+      }
       updateScoreHUD();
       updateTurnBanner();
     }
@@ -1057,7 +1123,7 @@
       applyBallLayout(state.gameMode);
 
       if (state.playMode === 'online' && !net.connected) {
-        if (!net.peer) net.createRoom();
+        if (!net.roomRef) net.createRoom();
         state.waitingForOpponent = true;
       }
       closeStartModalAndEnterGame();
