@@ -585,15 +585,43 @@
 
     /**
      * =========================================================================
-     * 2. PHYSICAL CONSTANTS (International Carom Table & Rigid-Body Dynamics)
+     * 2. PHYSICAL CONSTANTS (3-Ball & 4-Ball Table / Ball / Cue Specs)
      * =========================================================================
      */
+    const TABLE_SPECS = {
+      '3ball': {
+        TABLE_L: 2.844,       // 2,844mm (포인트 간격 355.5mm)
+        TABLE_W: 1.422,       // 1,422mm (포인트 간격 355.5mm)
+        HALF_L: 1.422,
+        HALF_W: 0.711,
+        CUSHION_H: 0.0375,    // 쿠션 높이 약 37~38mm
+        R: 0.03075,           // 당구공 지름 61.5mm
+        BALL_MASS: 0.210      // 3구 공 질량 (kg)
+      },
+      '4ball': {
+        TABLE_L: 2.448,       // 2,448mm (포인트 간격 306mm)
+        TABLE_W: 1.224,       // 1,224mm (포인트 간격 306mm)
+        HALF_L: 1.224,
+        HALF_W: 0.612,
+        CUSHION_H: 0.040,     // 쿠션 높이 약 40mm
+        R: 0.03275,           // 당구공 지름 65.5mm
+        BALL_MASS: 0.254      // 4구 공 질량 (kg)
+      }
+    };
+
     const PHYS = {
-      TABLE_L: 2.84,
-      TABLE_W: 1.42,
-      HALF_L: 1.42,
-      HALF_W: 0.71,
+      TABLE_L: 2.844,
+      TABLE_W: 1.422,
+      HALF_L: 1.422,
+      HALF_W: 0.711,
+      CUSHION_H: 0.0375,
       R: 0.03075,
+      BALL_MASS: 0.210,
+      CUE_LENGTH: 1.420,      // 큐 전체 길이 1,420mm (상대 69cm + 하대 72cm + 팁/선골 1cm)
+      CUE_MASS: 0.500,        // 큐 무게 500g (0.500kg)
+      CUE_TIP_R: 0.00575,     // 큐 팁 지름 11.5mm (반지름 5.75mm)
+      CUE_TIP_E: 0.72,
+      MAX_CUE_SPEED: 6.11,
       G: 9.80665,
       MU_SLIDE: 0.20,
       MU_ROLL: 0.015,
@@ -603,7 +631,6 @@
       MU_BALL: 0.055,
       E_CUSHION: 0.78,
       MU_CUSHION: 0.14,
-      MAX_SPEED: 7.4,
       SQUIRT_FACTOR: 0.048,
       SWERVE_FACTOR: 0.013,
       EPS_LIN: 0.012,
@@ -772,7 +799,12 @@
       return tex;
     }
 
+    let currentTableGroup = null;
+
     function buildTable3D() {
+      if (currentTableGroup) {
+        scene.remove(currentTableGroup);
+      }
       const tableGroup = new THREE.Group();
 
       const bedGeo = new THREE.BoxGeometry(PHYS.TABLE_L, 0.08, PHYS.TABLE_W);
@@ -786,7 +818,7 @@
       bedMesh.receiveShadow = true;
       tableGroup.add(bedMesh);
 
-      const cushionH = 0.044;
+      const cushionH = PHYS.CUSHION_H;
       const cushionThick = 0.045;
       const cushionMat = new THREE.MeshStandardMaterial({
         color: 0x0d2142,
@@ -821,7 +853,7 @@
       tableGroup.add(eastCush);
 
       const railW = 0.11;
-      const railH = 0.052;
+      const railH = cushionH + 0.008;
       const woodMat = new THREE.MeshStandardMaterial({
         color: 0x2a1206,
         roughness: 1.0,
@@ -859,6 +891,7 @@
       cabinet.position.y = -0.15;
       tableGroup.add(cabinet);
 
+      // 프레임 포인트: 장쿠션 8등분, 단쿠션 4등분 (3구: 355.5mm 간격, 4구: 306mm 간격)
       const diamondGeo = new THREE.BoxGeometry(0.014, 0.003, 0.014);
       const diamondMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.2 });
 
@@ -881,6 +914,7 @@
         });
       }
 
+      currentTableGroup = tableGroup;
       scene.add(tableGroup);
     }
 
@@ -915,7 +949,7 @@
       return tex;
     }
 
-    const ballGeo = new THREE.SphereGeometry(PHYS.R, 36, 24);
+    let ballGeo = new THREE.SphereGeometry(PHYS.R, 36, 24);
 
     function createCaromBall(id, type, label, x, z, baseHex, dotHex) {
       const mat = new THREE.MeshStandardMaterial({
@@ -954,20 +988,52 @@
       gameState.balls = [];
     }
 
+    function applyModeSpecs(mode) {
+      const spec = TABLE_SPECS[mode] || TABLE_SPECS['3ball'];
+      const changed =
+        PHYS.TABLE_L !== spec.TABLE_L ||
+        PHYS.TABLE_W !== spec.TABLE_W ||
+        PHYS.CUSHION_H !== spec.CUSHION_H ||
+        PHYS.R !== spec.R;
+
+      PHYS.TABLE_L = spec.TABLE_L;
+      PHYS.TABLE_W = spec.TABLE_W;
+      PHYS.HALF_L = spec.HALF_L;
+      PHYS.HALF_W = spec.HALF_W;
+      PHYS.CUSHION_H = spec.CUSHION_H;
+      PHYS.R = spec.R;
+      PHYS.BALL_MASS = spec.BALL_MASS;
+
+      if (changed) {
+        buildTable3D();
+        ballGeo.dispose();
+        ballGeo = new THREE.SphereGeometry(PHYS.R, 36, 24);
+        ghostBallMesh.geometry.dispose();
+        ghostBallMesh.geometry = new THREE.SphereGeometry(PHYS.R, 24, 16);
+        ghostRingMesh.geometry.dispose();
+        ghostRingMesh.geometry = new THREE.RingGeometry(PHYS.R * 0.85, PHYS.R * 1.05, 32);
+      }
+    }
+
     function setupBalls() {
+      applyModeSpecs(gameState.mode);
       clearBalls();
+
+      const headX = PHYS.TABLE_L / 4;
+      const sideZ = PHYS.TABLE_W / 8;
+
       if (gameState.mode === '3ball') {
         gameState.balls.push(
-          createCaromBall('white', 'white', '흰공', -0.71, 0.18, '#f8fafc', '#ef4444'),
-          createCaromBall('yellow', 'yellow', '노란공', -0.71, 0.0, '#eab308', '#dc2626'),
-          createCaromBall('red1', 'red', '빨간공', 0.71, 0.0, '#dc2626', '#ffffff')
+          createCaromBall('white', 'white', '흰공', -headX, sideZ, '#f8fafc', '#ef4444'),
+          createCaromBall('yellow', 'yellow', '노란공', -headX, 0.0, '#eab308', '#dc2626'),
+          createCaromBall('red1', 'red', '빨간공', headX, 0.0, '#dc2626', '#ffffff')
         );
       } else {
         gameState.balls.push(
-          createCaromBall('white', 'white', '흰공', -0.71, 0.18, '#f8fafc', '#ef4444'),
-          createCaromBall('yellow', 'yellow', '노란공', 0.71, -0.18, '#eab308', '#dc2626'),
-          createCaromBall('red1', 'red', '적구1', 0.71, 0.0, '#dc2626', '#ffffff'),
-          createCaromBall('red2', 'red', '적구2', -0.71, 0.0, '#e11d48', '#fef08a')
+          createCaromBall('white', 'white', '흰공', -headX, sideZ, '#f8fafc', '#ef4444'),
+          createCaromBall('yellow', 'yellow', '노란공', headX, -sideZ, '#eab308', '#dc2626'),
+          createCaromBall('red1', 'red', '적구1', headX, 0.0, '#dc2626', '#ffffff'),
+          createCaromBall('red2', 'red', '적구2', -headX, 0.0, '#e11d48', '#fef08a')
         );
       }
 
@@ -1030,38 +1096,44 @@
     const cueStickGroup = new THREE.Group();
 
     function buildCueStick3D() {
-      const totalLen = 1.42;
+      // 큐 전체 길이 1,420mm (팁 4mm + 선골 6mm + 상대 69cm + 하대 72cm), 팁 지름 11.5mm
+      const tipR = PHYS.CUE_TIP_R; // 0.00575m (지름 11.5mm)
+      const tipLen = 0.004;
+      const ferruleLen = 0.006;
+      const shaftLen = 0.690;      // 상대 69cm
+      const buttLen = 0.720;       // 하대 72cm
+
       const tipMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.0058, 0.006, 0.012, 16),
+        new THREE.CylinderGeometry(tipR, tipR, tipLen, 16),
         new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.7 })
       );
       tipMesh.rotation.z = Math.PI / 2;
-      tipMesh.position.x = -0.006;
+      tipMesh.position.x = -(tipLen / 2);
       cueStickGroup.add(tipMesh);
 
       const ferruleMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.006, 0.0063, 0.024, 16),
+        new THREE.CylinderGeometry(tipR, 0.0059, ferruleLen, 16),
         new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25 })
       );
       ferruleMesh.rotation.z = Math.PI / 2;
-      ferruleMesh.position.x = -0.024;
+      ferruleMesh.position.x = -(tipLen + ferruleLen / 2);
       cueStickGroup.add(ferruleMesh);
 
       const shaftMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.0063, 0.0105, 0.70, 16),
+        new THREE.CylinderGeometry(0.0059, 0.0105, shaftLen, 16),
         new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.32 })
       );
       shaftMesh.rotation.z = Math.PI / 2;
-      shaftMesh.position.x = -0.386;
+      shaftMesh.position.x = -(tipLen + ferruleLen + shaftLen / 2);
       shaftMesh.castShadow = true;
       cueStickGroup.add(shaftMesh);
 
       const buttMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.0105, 0.0155, totalLen - 0.736, 16),
+        new THREE.CylinderGeometry(0.0105, 0.0155, buttLen, 16),
         new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.28 })
       );
       buttMesh.rotation.z = Math.PI / 2;
-      buttMesh.position.x = -0.736 - (totalLen - 0.736) / 2;
+      buttMesh.position.x = -(tipLen + ferruleLen + shaftLen + buttLen / 2);
       buttMesh.castShadow = true;
       cueStickGroup.add(buttMesh);
 
@@ -1285,7 +1357,10 @@
      */
     function applyShotImpulse(aimYaw, power, elevationDeg, spinX, spinY) {
       const cue = getCueBall();
-      const v0 = Math.pow(power, 1.12) * PHYS.MAX_SPEED;
+      const vCue = Math.pow(power, 1.12) * PHYS.MAX_CUE_SPEED;
+      const momentumTransfer = (1 + PHYS.CUE_TIP_E) / (1 + PHYS.BALL_MASS / PHYS.CUE_MASS);
+      const v0 = vCue * momentumTransfer;
+
       const elevRad = THREE.MathUtils.degToRad(elevationDeg);
       const cosElev = Math.cos(elevRad);
       const sinElev = Math.sin(elevRad);
