@@ -790,8 +790,8 @@
       const cushionThick = 0.045;
       const cushionMat = new THREE.MeshStandardMaterial({
         color: 0x0d2142,
-        roughness: 0.65,
-        metalness: 0.08
+        roughness: 0.9,
+        metalness: 0.0
       });
 
       const longCushGeo = new THREE.BoxGeometry(PHYS.TABLE_L + cushionThick * 2, cushionH, cushionThick);
@@ -823,9 +823,9 @@
       const railW = 0.11;
       const railH = 0.052;
       const woodMat = new THREE.MeshStandardMaterial({
-        color: 0x451a03,
-        roughness: 0.35,
-        metalness: 0.15
+        color: 0x2a1206,
+        roughness: 1.0,
+        metalness: 0.0
       });
 
       const totalOuterL = PHYS.TABLE_L + (cushionThick + railW) * 2;
@@ -854,7 +854,7 @@
       tableGroup.add(eRail);
 
       const cabinetGeo = new THREE.BoxGeometry(totalOuterL - 0.06, 0.22, totalOuterW - 0.06);
-      const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.7 });
+      const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x161412, roughness: 1.0, metalness: 0.0 });
       const cabinet = new THREE.Mesh(cabinetGeo, cabinetMat);
       cabinet.position.y = -0.15;
       tableGroup.add(cabinet);
@@ -1142,7 +1142,7 @@
       cuePivot.position.set(cue.x, cue.y, cue.z);
       cuePivot.rotation.order = 'YXZ';
       cuePivot.rotation.y = -gameState.aimYaw;
-      cuePivot.rotation.z = THREE.MathUtils.degToRad(gameState.cueElevationDeg);
+      cuePivot.rotation.z = -THREE.MathUtils.degToRad(gameState.cueElevationDeg);
 
       const pullback = PHYS.R + 0.03 + gameState.shotPower * 0.34;
       const tipLateral = gameState.spin.x * (PHYS.R * 0.58);
@@ -2650,6 +2650,3 @@
   </script>
 </body>
 </html>
-```[cite: 7, 8]
-
-GitHub `index.html`에 반영하신 뒤 다른 컴퓨터에서 방 코드로 접속해 보시겠어요?
