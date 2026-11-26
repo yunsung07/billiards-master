@@ -188,8 +188,11 @@
         <button id="btn-sound" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs transition" title="효과음 켜기/끄기">
           🔊
         </button>
-        <button id="btn-rerack" class="hidden sm:inline-block px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition">
-          초구 재배치
+        <button id="btn-reset-game" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition">
+          초기화
+        </button>
+        <button id="btn-surrender" class="hidden px-2.5 py-1.5 rounded-lg bg-rose-600/25 hover:bg-rose-600/40 text-rose-300 border border-rose-500/50 text-xs font-bold transition">
+          항복
         </button>
       </div>
     </header>
@@ -414,6 +417,21 @@
         </button>
         <button id="btn-go-menu" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition">
           메뉴로 이동
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM RESET / SURRENDER MODAL -->
+  <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
+      <p id="confirm-modal-msg" class="text-base sm:text-lg font-black text-white mb-6">게임을 초기화하겠습니까?</p>
+      <div class="flex gap-3">
+        <button id="btn-confirm-yes" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition">
+          예
+        </button>
+        <button id="btn-confirm-no" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition">
+          아니오
         </button>
       </div>
     </div>
@@ -1763,6 +1781,9 @@
           const sync = data.lastSync;
           gameState.online.lastSyncId = sync.syncId;
           gameState.isMoving = false;
+          gameState.shotPower = 0;
+          updatePowerGauge(0);
+          resetHitIndicators();
           applyBallPositions(sync.balls);
           gameState.scores = sync.scores || { 1: 0, 2: 0 };
           gameState.currentPlayer = sync.currentPlayer || 1;
@@ -2758,20 +2779,5 @@
       requestAnimationFrame(animate);
     };
   </script>
-
-  <!-- CONFIRM RESET / SURRENDER MODAL -->
-  <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
-      <p id="confirm-modal-msg" class="text-base sm:text-lg font-black text-white mb-6">게임을 초기화하겠습니까?</p>
-      <div class="flex gap-3">
-        <button id="btn-confirm-yes" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition">
-          예
-        </button>
-        <button id="btn-confirm-no" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition">
-          아니오
-        </button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
