@@ -108,6 +108,8 @@
   </style>
 </head>
 <body>
+  <!-- GAME PAGE (Separate view from Selection Page) -->
+  <div id="game-page" class="hidden fixed inset-0">
   <!-- 3D WebGL Canvas Container -->
   <div id="canvas-container"></div>
 
@@ -117,7 +119,7 @@
     <header class="w-full px-3 py-2 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/90 flex flex-wrap items-center justify-between gap-2 pointer-auto">
       <!-- Left: Menu, Mode & Room Code Badge -->
       <div class="flex items-center gap-2">
-        <button id="btn-menu" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs sm:text-sm font-bold border border-slate-700 transition flex items-center gap-1.5 shadow">
+        <button id="btn-menu" class="hidden px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs sm:text-sm font-bold border border-slate-700 transition flex items-center gap-1.5 shadow">
           <span>⚙️</span>
           <span>메뉴</span>
         </button>
@@ -193,6 +195,9 @@
         </button>
         <button id="btn-surrender" class="hidden px-2.5 py-1.5 rounded-lg bg-rose-600/25 hover:bg-rose-600/40 text-rose-300 border border-rose-500/50 text-xs font-bold transition">
           항복
+        </button>
+        <button id="btn-exit-game" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-bold transition">
+          나가기
         </button>
       </div>
     </header>
@@ -287,108 +292,193 @@
     </footer>
   </div>
 
-  <!-- START / SETTINGS MODAL -->
-  <div id="start-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl my-auto">
-      <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-          <span>🎱</span> 당구 마스터
-        </h1>
-        <button id="btn-close-modal" class="hidden text-slate-400 hover:text-white text-xl font-bold px-2">✕</button>
-      </div>
+  </div>
 
-      <!-- 1. Game Mode -->
-      <div class="mb-4">
-        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">1. 경기 종목 선택</label>
-        <div class="grid grid-cols-2 gap-3">
-          <button type="button" data-mode="3ball" class="mode-btn p-3.5 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-left transition">
-            <div class="font-black text-base text-white">3구 (쓰리쿠션)</div>
-            <p class="text-[11px] text-slate-300 mt-1.5 leading-relaxed">
-              흰공·노란공·빨간공 3개 사용. 2적구 접촉 전 <b>3쿠션 이상</b> 선행 시 <b>+10점</b>.
+  <!-- START / SETTINGS PAGE (Full-Screen Edge-to-Edge Layout) -->
+  <div id="start-modal" class="fixed inset-0 z-50 w-screen h-screen overflow-y-auto text-white"
+       style="background: radial-gradient(circle at 50% 25%, #132b52 0%, #09152b 58%, #040812 100%);">
+    <div class="min-h-screen w-full max-w-6xl mx-auto px-5 sm:px-10 lg:px-14 py-6 sm:py-10 flex flex-col justify-between gap-6">
+      <!-- Top Title & Custom Crossed-Cue + 3-Ball Logo -->
+      <header class="flex items-center justify-between pt-1">
+        <div class="flex items-center gap-4 sm:gap-5">
+          <!-- Custom Logo: Crossed Cue Sticks with White (Top), Yellow (Left), Red (Right) -->
+          <div class="w-14 h-14 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center drop-shadow-[0_6px_16px_rgba(0,0,0,0.65)]">
+            <svg viewBox="0 0 100 100" class="w-full h-full overflow-visible" xmlns="http://www.w3.org/2000/svg" aria-label="당구 마스터 로고">
+              <defs>
+                <radialGradient id="logoWhiteBall" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stop-color="#ffffff" />
+                  <stop offset="65%" stop-color="#e5e7eb" />
+                  <stop offset="100%" stop-color="#9ca3af" />
+                </radialGradient>
+                <radialGradient id="logoYellowBall" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stop-color="#fef08a" />
+                  <stop offset="55%" stop-color="#eab308" />
+                  <stop offset="100%" stop-color="#a16207" />
+                </radialGradient>
+                <radialGradient id="logoRedBall" cx="35%" cy="30%" r="65%">
+                  <stop offset="0%" stop-color="#fca5a5" />
+                  <stop offset="55%" stop-color="#dc2626" />
+                  <stop offset="100%" stop-color="#7f1d1d" />
+                </radialGradient>
+                <filter id="logoBallShadow" x="-25%" y="-25%" width="150%" height="150%">
+                  <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000000" flood-opacity="0.6" />
+                </filter>
+              </defs>
+
+              <!-- Crossed Cue 1 (Bottom-Left -> Top-Right) -->
+              <g stroke-linecap="round">
+                <line x1="14" y1="86" x2="39" y2="61" stroke="#4a2511" stroke-width="5.2" />
+                <line x1="39" y1="61" x2="41.5" y2="58.5" stroke="#fbbf24" stroke-width="4.6" />
+                <line x1="41.5" y1="58.5" x2="79" y2="21" stroke="#f3d299" stroke-width="3.6" />
+                <line x1="79" y1="21" x2="83" y2="17" stroke="#ffffff" stroke-width="3.2" />
+                <line x1="83" y1="17" x2="86" y2="14" stroke="#38bdf8" stroke-width="3.2" />
+              </g>
+
+              <!-- Crossed Cue 2 (Bottom-Right -> Top-Left) -->
+              <g stroke-linecap="round">
+                <line x1="86" y1="86" x2="61" y2="61" stroke="#3b1d0e" stroke-width="5.2" />
+                <line x1="61" y1="61" x2="58.5" y2="58.5" stroke="#fbbf24" stroke-width="4.6" />
+                <line x1="58.5" y1="58.5" x2="21" y2="21" stroke="#e7c283" stroke-width="3.6" />
+                <line x1="21" y1="21" x2="17" y2="17" stroke="#ffffff" stroke-width="3.2" />
+                <line x1="17" y1="17" x2="14" y2="14" stroke="#38bdf8" stroke-width="3.2" />
+              </g>
+
+              <!-- Top: White Ball (흰공) -->
+              <g filter="url(#logoBallShadow)">
+                <circle cx="50" cy="23" r="11.5" fill="url(#logoWhiteBall)" />
+                <ellipse cx="46.5" cy="19" rx="3.2" ry="1.8" transform="rotate(-30 46.5 19)" fill="#ffffff" opacity="0.85" />
+              </g>
+
+              <!-- Left: Yellow Ball (노란공) -->
+              <g filter="url(#logoBallShadow)">
+                <circle cx="22.5" cy="51" r="11.5" fill="url(#logoYellowBall)" />
+                <ellipse cx="19" cy="47" rx="3.2" ry="1.8" transform="rotate(-30 19 47)" fill="#ffffff" opacity="0.7" />
+              </g>
+
+              <!-- Right: Red Ball (빨간공) -->
+              <g filter="url(#logoBallShadow)">
+                <circle cx="77.5" cy="51" r="11.5" fill="url(#logoRedBall)" />
+                <ellipse cx="74" cy="47" rx="3.2" ry="1.8" transform="rotate(-30 74 47)" fill="#ffffff" opacity="0.7" />
+              </g>
+            </svg>
+          </div>
+
+          <div>
+            <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight">
+              당구 마스터
+            </h1>
+            <p class="text-xs sm:text-sm font-semibold text-sky-300/80 tracking-widest uppercase mt-1">
+              3D CAROM BILLIARDS
             </p>
-          </button>
-
-          <button type="button" data-mode="4ball" class="mode-btn p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-left transition">
-            <div class="font-black text-base text-white">4구 (사구)</div>
-            <p class="text-[11px] text-slate-300 mt-1.5 leading-relaxed">
-              빨간공 2개 접촉 <b>+10점</b>, 상대 수구(노란공) 접촉 시 <b>-10점 파울</b>.
-            </p>
-          </button>
+          </div>
         </div>
-      </div>
+        <button id="btn-close-modal" class="hidden text-slate-300 hover:text-white text-2xl font-bold px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 transition">✕</button>
+      </header>
 
-      <!-- 2. Play Mode -->
-      <div class="mb-4">
-        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">2. 플레이 모드</label>
-        <div class="grid grid-cols-3 gap-2">
-          <button type="button" data-players="1p" class="player-btn p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition">
-            <div class="font-bold text-xs sm:text-sm text-white">🎯 1인 연습</div>
-            <div class="text-[10px] text-slate-300 mt-0.5">혼자서 기술 연습</div>
-          </button>
-          <button type="button" data-players="2p" class="player-btn p-2.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition">
-            <div class="font-bold text-xs sm:text-sm text-white">⚔️ 2인 로컬 대전</div>
-            <div class="text-[10px] text-slate-300 mt-0.5">한 기기 교대 대전</div>
-          </button>
-          <button type="button" data-players="online" class="player-btn p-2.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition">
-            <div class="font-bold text-xs sm:text-sm text-indigo-300">🌐 온라인 멀티플레이</div>
-            <div class="text-[10px] text-slate-300 mt-0.5">방 코드 실시간 대전</div>
-          </button>
+      <!-- Main Full-Screen Settings Grid -->
+      <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start my-auto">
+        <!-- Left Column: Mode & Multiplayer Setup -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+          <!-- 1. Game Mode -->
+          <div>
+            <label class="block text-xs sm:text-sm font-bold text-sky-200/85 uppercase tracking-wider mb-2.5">1. 경기 종목 선택</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <button type="button" data-mode="3ball" class="mode-btn p-4 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-left transition">
+                <div class="font-black text-base sm:text-lg text-white">3구 (쓰리쿠션)</div>
+                <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                  흰공·노란공·빨간공 3개 사용. 2적구 접촉 전 <b>3쿠션 이상</b> 선행 시 <b>+10점</b>.
+                </p>
+              </button>
+
+              <button type="button" data-mode="4ball" class="mode-btn p-4 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-left transition">
+                <div class="font-black text-base sm:text-lg text-white">4구 (사구)</div>
+                <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                  빨간공 2개 접촉 <b>+10점</b>, 상대 수구(노란공) 접촉 시 <b>-10점 파울</b>.
+                </p>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Play Mode -->
+          <div>
+            <label class="block text-xs sm:text-sm font-bold text-sky-200/85 uppercase tracking-wider mb-2.5">2. 플레이 모드</label>
+            <div class="grid grid-cols-3 gap-3">
+              <button type="button" data-players="1p" class="player-btn p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition">
+                <div class="font-bold text-xs sm:text-sm text-white">🎯 1인 연습</div>
+                <div class="text-[11px] text-slate-300 mt-1">혼자서 기술 연습</div>
+              </button>
+              <button type="button" data-players="2p" class="player-btn p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition">
+                <div class="font-bold text-xs sm:text-sm text-white">⚔️ 2인 로컬 대전</div>
+                <div class="text-[11px] text-slate-300 mt-1">한 기기 교대 대전</div>
+              </button>
+              <button type="button" data-players="online" class="player-btn p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition">
+                <div class="font-bold text-xs sm:text-sm text-indigo-300">🌐 온라인 멀티플레이</div>
+                <div class="text-[11px] text-slate-300 mt-1">방 코드 실시간 대전</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Online Multiplayer Lobby Panel -->
+          <div id="online-lobby-box" class="hidden p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/40 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs sm:text-sm font-black text-indigo-300">🌐 온라인 멀티플레이 로비</span>
+              <span id="firebase-ready-badge" class="text-[11px] font-bold text-emerald-400">🟢 Firebase 실시간 DB 연결됨</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <button type="button" id="btn-online-host" class="py-2.5 px-3 rounded-lg bg-indigo-600 text-white font-bold text-xs sm:text-sm border border-indigo-400 transition">
+                ➕ 방 만들기 (1P 흰공)
+              </button>
+              <button type="button" id="btn-online-join-tab" class="py-2.5 px-3 rounded-lg bg-slate-800 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 transition">
+                🔑 방 코드 참가 (2P 노란공)
+              </button>
+            </div>
+
+            <div id="online-host-info" class="text-xs text-slate-300 bg-slate-900/75 p-3 rounded-lg border border-slate-800 leading-relaxed">
+              5자리 방 코드가 발급됩니다. 상대방이 입장하기 전까지 당구대에서 <b>큐대·조준선으로 자유 연습</b>을 할 수 있으며, 상대방 입장 시 자동으로 초구 배치와 본 경기가 시작됩니다.
+            </div>
+
+            <div id="online-join-form" class="hidden space-y-2">
+              <label class="block text-xs font-bold text-slate-300">상대방에게 받은 5자리 방 코드 입력</label>
+              <input id="input-room-code" type="text" maxlength="6" placeholder="예: A7K9P" class="w-full bg-slate-900 border border-indigo-500/60 rounded-lg px-3 py-2.5 text-center text-lg font-black tracking-widest uppercase text-amber-300 focus:outline-none focus:border-amber-400" />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Online Multiplayer Lobby Panel -->
-      <div id="online-lobby-box" class="hidden mb-4 p-3.5 rounded-xl bg-indigo-950/60 border border-indigo-500/40 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-black text-indigo-300">🌐 온라인 멀티플레이 로비</span>
-          <span id="firebase-ready-badge" class="text-[10px] font-bold text-emerald-400">🟢 Firebase 실시간 DB 연결됨</span>
+        <!-- Right Column: Target Score & Controls Guide -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+          <!-- 3. Target Score & 4-Ball Finish Option -->
+          <div id="match-options-row" class="grid grid-cols-1 gap-3.5">
+            <div>
+              <label class="block text-xs sm:text-sm font-bold text-sky-200/85 uppercase tracking-wider mb-2.5">3. 목표 점수 (10~1000점)</label>
+              <select id="sel-target-score" class="w-full bg-slate-900/85 border border-slate-600 rounded-xl px-4 py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500"></select>
+            </div>
+
+            <div id="opt-4ball-finish" class="hidden flex flex-col justify-center bg-slate-900/75 p-3.5 rounded-xl border border-slate-700">
+              <label class="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" id="chk-3c-finish" class="w-4 h-4 accent-amber-500 rounded" />
+                <span class="text-xs sm:text-sm font-bold text-amber-300">쓰리쿠션 마무리 적용</span>
+              </label>
+              <span class="text-xs text-slate-400 mt-1">목표 점수 마지막 10점은 3쿠션으로 득점</span>
+            </div>
+          </div>
+
+          <!-- Controls Guide -->
+          <div class="bg-slate-950/65 rounded-xl p-4 sm:p-5 border border-white/10 text-xs sm:text-sm text-slate-300 space-y-2 leading-relaxed">
+            <div class="font-bold text-sky-400 text-sm sm:text-base mb-1">🎮 조작 안내</div>
+            <div>• <b>조준선 ON/OFF:</b> 상단 버튼 또는 <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">G</kbd> 키로 진행 방향 표시 토글</div>
+            <div>• <b>큐대 고각(0°~75°):</b> 슬라이더 또는 <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">▲</kbd><kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">▼</kbd> 키로 점프샷·마세 커브 구사</div>
+            <div>• <b>샷 & 시점:</b> 좌클릭 드래그 당겨서 샷 | 우클릭 드래그 시점 회전 | 휠 줌 | <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">V</kbd> 탑뷰</div>
+          </div>
         </div>
+      </main>
 
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" id="btn-online-host" class="py-2 px-3 rounded-lg bg-indigo-600 text-white font-bold text-xs border border-indigo-400 transition">
-            ➕ 방 만들기 (1P 흰공)
-          </button>
-          <button type="button" id="btn-online-join-tab" class="py-2 px-3 rounded-lg bg-slate-800 text-slate-300 font-bold text-xs border border-slate-700 transition">
-            🔑 방 코드 참가 (2P 노란공)
-          </button>
-        </div>
-
-        <div id="online-host-info" class="text-[11px] text-slate-300 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 leading-relaxed">
-          5자리 방 코드가 발급됩니다. 상대방이 입장하기 전까지 당구대에서 <b>큐대·조준선으로 자유 연습</b>을 할 수 있으며, 상대방 입장 시 자동으로 초구 배치와 본 경기가 시작됩니다.
-        </div>
-
-        <div id="online-join-form" class="hidden space-y-1.5">
-          <label class="block text-[11px] font-bold text-slate-300">상대방에게 받은 5자리 방 코드 입력</label>
-          <input id="input-room-code" type="text" maxlength="6" placeholder="예: A7K9P" class="w-full bg-slate-900 border border-indigo-500/60 rounded-lg px-3 py-2 text-center text-base font-black tracking-widest uppercase text-amber-300 focus:outline-none focus:border-amber-400" />
-        </div>
-      </div>
-
-      <!-- 3. Target Score & 4-Ball Finish Option -->
-      <div id="match-options-row" class="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">3. 목표 점수 (10~1000점)</label>
-          <select id="sel-target-score" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500"></select>
-        </div>
-
-        <div id="opt-4ball-finish" class="hidden flex flex-col justify-center bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="chk-3c-finish" class="w-4 h-4 accent-amber-500 rounded" />
-            <span class="text-xs font-bold text-amber-300">쓰리쿠션 마무리 적용</span>
-          </label>
-          <span class="text-[10px] text-slate-400 mt-1">목표 점수 마지막 10점은 3쿠션으로 득점</span>
-        </div>
-      </div>
-
-      <!-- Controls Guide -->
-      <div class="bg-slate-950/90 rounded-xl p-3 mb-5 border border-slate-800 text-xs text-slate-300 space-y-1">
-        <div class="font-bold text-sky-400 mb-1">🎮 조작 안내</div>
-        <div>• <b>조준선 ON/OFF:</b> 상단 버튼 또는 <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">G</kbd> 키로 진행 방향 표시 토글</div>
-        <div>• <b>큐대 고각(0°~75°):</b> 슬라이더 또는 <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">▲</kbd><kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">▼</kbd> 키로 점프샷·마세 커브 구사</div>
-        <div>• <b>샷 & 시점:</b> 좌클릭 드래그 당겨서 샷 | 우클릭 드래그 시점 회전 | 휠 줌 | <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-amber-300 font-mono">V</kbd> 탑뷰</div>
-      </div>
-
-      <button id="btn-start" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-base shadow-lg shadow-blue-900/50 transition transform active:scale-[0.99]">
-        3D 경기 시작하기
-      </button>
+      <!-- Bottom Full-Width Start Button -->
+      <footer class="pt-2 pb-1">
+        <button id="btn-start" class="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-lg sm:text-xl shadow-lg shadow-blue-900/50 transition transform active:scale-[0.99] cursor-pointer">
+          게임 시작하기
+        </button>
+      </footer>
     </div>
   </div>
 
@@ -432,6 +522,44 @@
         </button>
         <button id="btn-confirm-no" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition">
           아니오
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONLINE REMATCH VOTE MODAL -->
+  <div id="rematch-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
+      <p id="rematch-reason-text" class="text-xs font-bold text-amber-300 mb-2"></p>
+      <p class="text-lg sm:text-xl font-black text-white mb-3">재대결 하시겠습니까?</p>
+      <div class="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-slate-800 border border-slate-600 mb-3">
+        <span id="rematch-vote-count" class="text-base font-black text-emerald-400 tracking-wider">0/2</span>
+      </div>
+      <p id="rematch-substatus" class="text-xs text-slate-400 mb-5">두 플레이어 모두 예를 누르면 재대결이 시작됩니다.</p>
+      <div class="flex gap-3">
+        <button id="btn-rematch-yes" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm transition">
+          예
+        </button>
+        <button id="btn-rematch-no" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition">
+          아니오
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONLINE FIRST-SHOT BALL CHOICE MODAL -->
+  <div id="ball-choice-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
+      <p id="ball-choice-title" class="text-lg sm:text-xl font-black text-white mb-2">초구 선택</p>
+      <p id="ball-choice-desc" class="text-xs sm:text-sm text-slate-300 mb-5">흰공과 노란공 중 초구로 시작할 공을 선택하세요.</p>
+      <div id="ball-choice-buttons" class="flex gap-3">
+        <button id="btn-choose-white" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-white text-slate-900 font-black text-sm border border-slate-300 transition flex items-center justify-center gap-2 shadow">
+          <span class="w-4 h-4 rounded-full bg-white border border-slate-400 inline-block"></span>
+          <span>흰공</span>
+        </button>
+        <button id="btn-choose-yellow" class="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm border border-amber-200 transition flex items-center justify-center gap-2 shadow">
+          <span class="w-4 h-4 rounded-full bg-yellow-300 border border-amber-600 inline-block"></span>
+          <span>노란공</span>
         </button>
       </div>
     </div>
@@ -675,7 +803,9 @@
         myRole: 1,              // 1 (Host / White) or 2 (Guest / Yellow)
         guestJoined: false,
         lastShotId: 0,
-        lastSyncId: 0
+        lastSyncId: 0,
+        lastLeftId: 0,
+        lastCompletedRematchId: 0
       },
 
       currentPlayer: 1,         // 1 (White) or 2 (Yellow)
@@ -710,6 +840,10 @@
     function canControlCue() {
       const confirmModal = document.getElementById('confirm-modal');
       if (confirmModal && !confirmModal.classList.contains('hidden')) return false;
+      const rematchModal = document.getElementById('rematch-modal');
+      if (rematchModal && !rematchModal.classList.contains('hidden')) return false;
+      const ballChoiceModal = document.getElementById('ball-choice-modal');
+      if (ballChoiceModal && !ballChoiceModal.classList.contains('hidden')) return false;
       if (!gameState.started || gameState.isMoving || gameState.gameOver) return false;
       if (gameState.players === 'online') {
         if (!gameState.online.guestJoined) return true;
@@ -783,17 +917,153 @@
 
     let currentTableGroup = null;
 
+    function createBilliardClothTextures() {
+      const w = 512, h = 512;
+      const colorCanvas = document.createElement('canvas');
+      colorCanvas.width = w;
+      colorCanvas.height = h;
+      const cg = colorCanvas.getContext('2d');
+
+      // Rich royal/tournament cobalt blue base matching photo feel
+      const grad = cg.createRadialGradient(w * 0.5, h * 0.5, w * 0.08, w * 0.5, h * 0.5, w * 0.72);
+      grad.addColorStop(0, '#1c66c7');
+      grad.addColorStop(0.65, '#1656ad');
+      grad.addColorStop(1, '#11448c');
+      cg.fillStyle = grad;
+      cg.fillRect(0, 0, w, h);
+
+      // Fine worsted billiard felt weave & nap grain
+      const bumpCanvas = document.createElement('canvas');
+      bumpCanvas.width = w;
+      bumpCanvas.height = h;
+      const bg = bumpCanvas.getContext('2d');
+      bg.fillStyle = '#808080';
+      bg.fillRect(0, 0, w, h);
+
+      const cImg = cg.getImageData(0, 0, w, h);
+      const bImg = bg.getImageData(0, 0, w, h);
+      const cd = cImg.data;
+      const bd = bImg.data;
+
+      let seed = 1337;
+      function rand() {
+        seed = (seed * 16807) % 2147483647;
+        return (seed - 1) / 2147483646;
+      }
+
+      for (let y = 0; y < h; y++) {
+        const rowThread = (y % 2 === 0) ? 3 : -3;
+        for (let x = 0; x < w; x++) {
+          const colThread = (x % 2 === 0) ? 3 : -3;
+          const fiber = (rand() - 0.5) * 14;
+          const delta = rowThread + colThread + fiber;
+          const idx = (y * w + x) * 4;
+
+          cd[idx] = Math.max(0, Math.min(255, cd[idx] + delta * 0.55));
+          cd[idx + 1] = Math.max(0, Math.min(255, cd[idx + 1] + delta * 0.75));
+          cd[idx + 2] = Math.max(0, Math.min(255, cd[idx + 2] + delta * 0.95));
+
+          const bVal = Math.max(0, Math.min(255, 128 + delta * 2.4));
+          bd[idx] = bVal;
+          bd[idx + 1] = bVal;
+          bd[idx + 2] = bVal;
+        }
+      }
+      cg.putImageData(cImg, 0, 0);
+      bg.putImageData(bImg, 0, 0);
+
+      const map = new THREE.CanvasTexture(colorCanvas);
+      map.encoding = THREE.sRGBEncoding;
+      map.wrapS = THREE.RepeatWrapping;
+      map.wrapT = THREE.RepeatWrapping;
+      map.repeat.set(3, 2);
+
+      const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+      bumpMap.wrapS = THREE.RepeatWrapping;
+      bumpMap.wrapT = THREE.RepeatWrapping;
+      bumpMap.repeat.set(6, 4);
+
+      return { map, bumpMap };
+    }
+
+    function createWoodRailTextures() {
+      const w = 512, h = 256;
+      const colorCanvas = document.createElement('canvas');
+      colorCanvas.width = w;
+      colorCanvas.height = h;
+      const cg = colorCanvas.getContext('2d');
+
+      const bumpCanvas = document.createElement('canvas');
+      bumpCanvas.width = w;
+      bumpCanvas.height = h;
+      const bg = bumpCanvas.getContext('2d');
+
+      // Deep dark espresso/walnut wood base matching photo rails
+      cg.fillStyle = '#2d170e';
+      cg.fillRect(0, 0, w, h);
+      bg.fillStyle = '#808080';
+      bg.fillRect(0, 0, w, h);
+
+      let seed = 4242;
+      function rand() {
+        seed = (seed * 16807) % 2147483647;
+        return (seed - 1) / 2147483646;
+      }
+
+      for (let y = 0; y < h; y++) {
+        const wave = Math.sin(y * 0.14) * 5 + Math.sin(y * 0.045) * 8;
+        const streak = (rand() - 0.5) * 14 + wave;
+        const r = Math.max(22, Math.min(82, 48 + streak));
+        const g = Math.max(10, Math.min(48, 25 + streak * 0.55));
+        const b = Math.max(6, Math.min(32, 16 + streak * 0.35));
+        cg.fillStyle = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+        cg.fillRect(0, y, w, 1);
+
+        const bv = Math.max(96, Math.min(160, Math.round(128 + streak * 1.4)));
+        bg.fillStyle = `rgb(${bv},${bv},${bv})`;
+        bg.fillRect(0, y, w, 1);
+      }
+
+      // Subtle fine wood pores along the grain
+      for (let i = 0; i < 650; i++) {
+        const px = rand() * w;
+        const py = rand() * h;
+        const len = 18 + rand() * 55;
+        cg.fillStyle = 'rgba(14, 6, 3, 0.28)';
+        cg.fillRect(px, py, len, 1);
+        bg.fillStyle = 'rgba(102, 102, 102, 0.35)';
+        bg.fillRect(px, py, len, 1);
+      }
+
+      const map = new THREE.CanvasTexture(colorCanvas);
+      map.encoding = THREE.sRGBEncoding;
+      map.wrapS = THREE.RepeatWrapping;
+      map.wrapT = THREE.RepeatWrapping;
+      map.repeat.set(2, 1);
+
+      const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+      bumpMap.wrapS = THREE.RepeatWrapping;
+      bumpMap.wrapT = THREE.RepeatWrapping;
+      bumpMap.repeat.set(2, 1);
+
+      return { map, bumpMap };
+    }
+
     function buildTable3D() {
       if (currentTableGroup) {
         scene.remove(currentTableGroup);
       }
       const tableGroup = new THREE.Group();
+      const clothTex = createBilliardClothTextures();
+      const woodTex = createWoodRailTextures();
 
       const bedGeo = new THREE.BoxGeometry(PHYS.TABLE_L, 0.08, PHYS.TABLE_W);
       const bedMat = new THREE.MeshStandardMaterial({
-        color: 0x0d2142,
-        roughness: 0.85,
-        metalness: 0.04
+        map: clothTex.map,
+        bumpMap: clothTex.bumpMap,
+        bumpScale: 0.0014,
+        roughness: 0.88,
+        metalness: 0.02
       });
       const bedMesh = new THREE.Mesh(bedGeo, bedMat);
       bedMesh.position.y = -0.04;
@@ -803,9 +1073,12 @@
       const cushionH = PHYS.CUSHION_H;
       const cushionThick = 0.045;
       const cushionMat = new THREE.MeshStandardMaterial({
-        color: 0x0d2142,
+        color: 0xdce8ff,
+        map: clothTex.map,
+        bumpMap: clothTex.bumpMap,
+        bumpScale: 0.0012,
         roughness: 0.9,
-        metalness: 0.0
+        metalness: 0.01
       });
 
       const longCushGeo = new THREE.BoxGeometry(PHYS.TABLE_L + cushionThick * 2, cushionH, cushionThick);
@@ -837,9 +1110,11 @@
       const railW = 0.11;
       const railH = cushionH + 0.008;
       const woodMat = new THREE.MeshStandardMaterial({
-        color: 0x2a1206,
-        roughness: 1.0,
-        metalness: 0.0
+        map: woodTex.map,
+        bumpMap: woodTex.bumpMap,
+        bumpScale: 0.0018,
+        roughness: 0.36,
+        metalness: 0.08
       });
 
       const totalOuterL = PHYS.TABLE_L + (cushionThick + railW) * 2;
@@ -1775,6 +2050,14 @@
           updateOnlineBanner();
         }
 
+        if (data.playerLeft && data.playerLeft.leftId &&
+            data.playerLeft.leftId !== gameState.online.lastLeftId &&
+            data.playerLeft.leaverRole !== gameState.online.myRole) {
+          gameState.online.lastLeftId = data.playerLeft.leftId;
+          handleOpponentLeftOnlineRoom(code);
+          return;
+        }
+
         if (data.lastSync && data.lastSync.syncId &&
             data.lastSync.syncId !== gameState.online.lastSyncId &&
             data.lastSync.shooter !== gameState.online.myRole) {
@@ -1805,9 +2088,16 @@
           if (sync.toastText) {
             showToast(sync.toastText, sync.toastTone || 'slate', sync.toastDuration || 2400);
           }
-          if (gameState.gameOver && sync.winner) {
+          if (gameState.gameOver && sync.winner && gameState.players !== 'online') {
             showGameOverModal(sync.winner);
           }
+        }
+
+        if (data.rematch) {
+          syncOnlineRematchState(data.rematch);
+        } else {
+          document.getElementById('rematch-modal').classList.add('hidden');
+          document.getElementById('ball-choice-modal').classList.add('hidden');
         }
       });
     }
@@ -1924,7 +2214,15 @@
       const p = gameState.currentPlayer;
       if (gameState.scores[p] >= gameState.targetScore) {
         gameState.gameOver = true;
-        showGameOverModal(p);
+        if (gameState.players === 'online') {
+          startOnlineRematchPrompt(
+            'gameover',
+            `${p === 1 ? '1P (흰공)' : '2P (노란공)'} 승리! (${gameState.scores[1]} : ${gameState.scores[2]})`,
+            p
+          );
+        } else {
+          showGameOverModal(p);
+        }
         return;
       }
 
@@ -2468,9 +2766,9 @@
       confirmModal.classList.add('hidden');
     }
 
-    function resetGameStateAndBalls() {
+    function resetGameStateAndBalls(startingPlayer = 1) {
       gameState.scores = { 1: 0, 2: 0 };
-      gameState.currentPlayer = 1;
+      gameState.currentPlayer = startingPlayer;
       gameState.inning = 1;
       gameState.currentRun = 0;
       gameState.gameOver = false;
@@ -2485,6 +2783,198 @@
       updateScoreboard();
     }
 
+    function enterGamePage() {
+      document.getElementById('start-modal').classList.add('hidden');
+      document.getElementById('game-page').classList.remove('hidden');
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function returnToSelectPage() {
+      closeConfirmModal();
+      document.getElementById('gameover-modal').classList.add('hidden');
+      document.getElementById('rematch-modal').classList.add('hidden');
+      document.getElementById('ball-choice-modal').classList.add('hidden');
+      document.getElementById('game-page').classList.add('hidden');
+      document.getElementById('start-modal').classList.remove('hidden');
+    }
+
+    async function leaveOnlineRoomAndReturnToMenu() {
+      const ref = gameState.online.roomRef;
+      const wasGuestJoined = gameState.online.guestJoined;
+      const myRole = gameState.online.myRole;
+
+      detachOnlineRoom();
+      gameState.online.active = false;
+      gameState.online.roomCode = '';
+      gameState.online.guestJoined = false;
+      gameState.online.lastShotId = 0;
+      gameState.online.lastSyncId = 0;
+      gameState.online.lastLeftId = 0;
+      gameState.online.lastCompletedRematchId = 0;
+      gameState.started = false;
+      gameState.gameOver = false;
+      gameState.isMoving = false;
+
+      if (ref) {
+        try {
+          if (!wasGuestJoined) {
+            await ref.remove();
+          } else {
+            await ref.update({
+              playerLeft: {
+                leftId: Date.now() + Math.floor(Math.random() * 10000),
+                leaverRole: myRole,
+                leftAt: Date.now()
+              },
+              guestJoined: false,
+              matchStarted: false,
+              rematch: null
+            });
+          }
+        } catch (_) {}
+      }
+
+      returnToSelectPage();
+    }
+
+    function handleOpponentLeftOnlineRoom(code) {
+      closeConfirmModal();
+      document.getElementById('gameover-modal').classList.add('hidden');
+      document.getElementById('rematch-modal').classList.add('hidden');
+      document.getElementById('ball-choice-modal').classList.add('hidden');
+
+      gameState.online.myRole = 1;
+      gameState.online.guestJoined = false;
+      resetGameStateAndBalls(1);
+      applyModeAndPlayerBadges();
+      updateOnlineBanner();
+
+      if (gameState.online.roomRef) {
+        gameState.online.roomRef.update({
+          initBalls: serializeBalls(),
+          guestJoined: false,
+          matchStarted: false,
+          rematch: null
+        }).catch(() => {});
+      }
+
+      showToast('상대가 게임을 나갔습니다.', 'amber', 3500);
+    }
+
+    function startOnlineRematchPrompt(reason, reasonText, chooserRole) {
+      if (gameState.players !== 'online' || !gameState.online.roomRef) return;
+      const rematchId = Date.now() + Math.floor(Math.random() * 10000);
+      gameState.online.roomRef.update({
+        rematch: {
+          active: true,
+          rematchId,
+          reason,
+          reasonText: reasonText || '',
+          chooserRole,
+          votes: { 1: false, 2: false },
+          firstBall: null
+        }
+      }).catch(() => {});
+    }
+
+    function syncOnlineRematchState(rematch) {
+      const rematchModal = document.getElementById('rematch-modal');
+      const ballChoiceModal = document.getElementById('ball-choice-modal');
+
+      if (rematch.firstBall && rematch.rematchId &&
+          rematch.rematchId !== gameState.online.lastCompletedRematchId) {
+        gameState.online.lastCompletedRematchId = rematch.rematchId;
+        rematchModal.classList.add('hidden');
+        ballChoiceModal.classList.add('hidden');
+
+        const startPlayer = rematch.firstBall === 'yellow' ? 2 : 1;
+        resetGameStateAndBalls(startPlayer);
+        updateOnlineBanner();
+        showToast(
+          startPlayer === 2
+            ? '노란공(2P) 초구로 재대결이 시작됩니다!'
+            : '흰공(1P) 초구로 재대결이 시작됩니다!',
+          'emerald',
+          3000
+        );
+        return;
+      }
+
+      if (!rematch.active) {
+        rematchModal.classList.add('hidden');
+        ballChoiceModal.classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('gameover-modal').classList.add('hidden');
+
+      const v1 = Boolean(rematch.votes && rematch.votes[1]);
+      const v2 = Boolean(rematch.votes && rematch.votes[2]);
+      const yesCount = (v1 ? 1 : 0) + (v2 ? 1 : 0);
+
+      document.getElementById('rematch-reason-text').textContent = rematch.reasonText || '';
+      document.getElementById('rematch-vote-count').textContent = `${yesCount}/2`;
+
+      if (yesCount < 2) {
+        ballChoiceModal.classList.add('hidden');
+        rematchModal.classList.remove('hidden');
+
+        const myVoted = gameState.online.myRole === 1 ? v1 : v2;
+        const btnYes = document.getElementById('btn-rematch-yes');
+        btnYes.disabled = myVoted;
+        document.getElementById('rematch-substatus').textContent = myVoted
+          ? '동의 완료! 상대방의 응답을 기다리는 중입니다...'
+          : '두 플레이어 모두 예를 누르면 재대결이 시작됩니다.';
+      } else {
+        rematchModal.classList.add('hidden');
+        ballChoiceModal.classList.remove('hidden');
+
+        const isChooser = rematch.chooserRole === gameState.online.myRole;
+        const titleEl = document.getElementById('ball-choice-title');
+        const descEl = document.getElementById('ball-choice-desc');
+        const btnsEl = document.getElementById('ball-choice-buttons');
+
+        if (isChooser) {
+          titleEl.textContent = '초구 선택';
+          descEl.textContent = '흰공과 노란공 중 초구로 시작할 공을 선택하세요.';
+          btnsEl.classList.remove('hidden');
+        } else {
+          titleEl.textContent = '초구 선택 대기 중';
+          descEl.textContent = '상대방이 흰공과 노란공 중 초구를 선택하고 있습니다...';
+          btnsEl.classList.add('hidden');
+        }
+      }
+    }
+
+    document.getElementById('btn-rematch-yes').addEventListener('click', () => {
+      if (gameState.players !== 'online' || !gameState.online.roomRef) return;
+      const myRole = gameState.online.myRole;
+      document.getElementById('btn-rematch-yes').disabled = true;
+      gameState.online.roomRef.child(`rematch/votes/${myRole}`).set(true).catch(() => {});
+    });
+
+    document.getElementById('btn-rematch-no').addEventListener('click', () => {
+      leaveOnlineRoomAndReturnToMenu();
+    });
+
+    document.getElementById('btn-choose-white').addEventListener('click', () => {
+      if (gameState.players !== 'online' || !gameState.online.roomRef) return;
+      gameState.online.roomRef.child('rematch').update({
+        active: false,
+        firstBall: 'white'
+      }).catch(() => {});
+    });
+
+    document.getElementById('btn-choose-yellow').addEventListener('click', () => {
+      if (gameState.players !== 'online' || !gameState.online.roomRef) return;
+      gameState.online.roomRef.child('rematch').update({
+        active: false,
+        firstBall: 'yellow'
+      }).catch(() => {});
+    });
+
     document.getElementById('btn-reset-game').addEventListener('click', () => {
       if (gameState.players === 'online') return;
       openConfirmModal('reset', '게임을 초기화하겠습니까?');
@@ -2493,6 +2983,10 @@
     document.getElementById('btn-surrender').addEventListener('click', () => {
       if (gameState.players !== 'online') return;
       openConfirmModal('surrender', '게임을 포기하고 항복하겠습니까?');
+    });
+
+    document.getElementById('btn-exit-game').addEventListener('click', () => {
+      openConfirmModal('exit', '게임을 나가겠습니까?');
     });
 
     document.getElementById('btn-confirm-no').addEventListener('click', () => {
@@ -2515,9 +3009,20 @@
           if (gameState.online.guestJoined) {
             gameState.shotLog.shooterRole = gameState.online.myRole;
             publishOnlineStateSync('상대가 항복하였습니다.', 'amber', 3000);
+            const chooserRole = gameState.online.myRole === 1 ? 2 : 1;
+            startOnlineRematchPrompt('surrender', '항복으로 게임이 초기화되었습니다.', chooserRole);
           } else {
             gameState.online.roomRef.update({ initBalls: serializeBalls() });
           }
+        }
+      } else if (action === 'exit') {
+        if (gameState.players === 'online') {
+          leaveOnlineRoomAndReturnToMenu();
+        } else {
+          gameState.started = false;
+          gameState.gameOver = false;
+          gameState.isMoving = false;
+          returnToSelectPage();
         }
       }
     });
@@ -2584,8 +3089,8 @@
         document.querySelectorAll('.mode-btn').forEach(b => {
           const active = b.dataset.mode === draftMode;
           b.className = active
-            ? 'mode-btn p-3.5 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-left transition'
-            : 'mode-btn p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-left transition';
+            ? 'mode-btn p-4 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-left transition'
+            : 'mode-btn p-4 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-left transition';
         });
         document.getElementById('opt-4ball-finish').classList.toggle('hidden', draftMode !== '4ball');
       });
@@ -2598,7 +3103,7 @@
           ? '🌐 온라인 방 만들기 & 시작'
           : '🔑 방 코드로 온라인 입장';
       } else {
-        btnStart.textContent = '3D 경기 시작하기';
+        btnStart.textContent = '게임 시작하기';
       }
     }
 
@@ -2608,8 +3113,8 @@
         document.querySelectorAll('.player-btn').forEach(b => {
           const active = b.dataset.players === draftPlayers;
           b.className = active
-            ? 'player-btn p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition'
-            : 'player-btn p-2.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition';
+            ? 'player-btn p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition'
+            : 'player-btn p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition';
         });
 
         document.getElementById('online-lobby-box').classList.toggle('hidden', draftPlayers !== 'online');
@@ -2619,8 +3124,8 @@
 
     document.getElementById('btn-online-host').addEventListener('click', () => {
       draftOnlineAction = 'host';
-      document.getElementById('btn-online-host').className = 'py-2 px-3 rounded-lg bg-indigo-600 text-white font-bold text-xs border border-indigo-400 transition';
-      document.getElementById('btn-online-join-tab').className = 'py-2 px-3 rounded-lg bg-slate-800 text-slate-300 font-bold text-xs border border-slate-700 transition';
+      document.getElementById('btn-online-host').className = 'py-2.5 px-3 rounded-lg bg-indigo-600 text-white font-bold text-xs sm:text-sm border border-indigo-400 transition';
+      document.getElementById('btn-online-join-tab').className = 'py-2.5 px-3 rounded-lg bg-slate-800 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 transition';
       document.getElementById('online-host-info').classList.remove('hidden');
       document.getElementById('online-join-form').classList.add('hidden');
       document.getElementById('match-options-row').classList.remove('hidden');
@@ -2629,8 +3134,8 @@
 
     document.getElementById('btn-online-join-tab').addEventListener('click', () => {
       draftOnlineAction = 'join';
-      document.getElementById('btn-online-join-tab').className = 'py-2 px-3 rounded-lg bg-indigo-600 text-white font-bold text-xs border border-indigo-400 transition';
-      document.getElementById('btn-online-host').className = 'py-2 px-3 rounded-lg bg-slate-800 text-slate-300 font-bold text-xs border border-slate-700 transition';
+      document.getElementById('btn-online-join-tab').className = 'py-2.5 px-3 rounded-lg bg-indigo-600 text-white font-bold text-xs sm:text-sm border border-indigo-400 transition';
+      document.getElementById('btn-online-host').className = 'py-2.5 px-3 rounded-lg bg-slate-800 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 transition';
       document.getElementById('online-host-info').classList.add('hidden');
       document.getElementById('online-join-form').classList.remove('hidden');
       document.getElementById('match-options-row').classList.add('hidden');
@@ -2711,29 +3216,34 @@
       updateScoreboard();
       updateOnlineBanner();
 
-      document.getElementById('start-modal').classList.add('hidden');
       document.getElementById('gameover-modal').classList.add('hidden');
-      document.getElementById('btn-close-modal').classList.remove('hidden');
+      document.getElementById('rematch-modal').classList.add('hidden');
+      document.getElementById('ball-choice-modal').classList.add('hidden');
+      enterGamePage();
     }
 
     document.getElementById('btn-start').addEventListener('click', startMatch);
     document.getElementById('btn-rematch').addEventListener('click', () => {
       if (gameState.players === 'online') {
-        document.getElementById('gameover-modal').classList.add('hidden');
-        document.getElementById('start-modal').classList.remove('hidden');
+        returnToSelectPage();
       } else {
         startMatch();
       }
     });
     document.getElementById('btn-menu').addEventListener('click', () => {
-      document.getElementById('start-modal').classList.remove('hidden');
+      returnToSelectPage();
     });
     document.getElementById('btn-close-modal').addEventListener('click', () => {
-      document.getElementById('start-modal').classList.add('hidden');
+      enterGamePage();
     });
     document.getElementById('btn-go-menu').addEventListener('click', () => {
-      document.getElementById('gameover-modal').classList.add('hidden');
-      document.getElementById('start-modal').classList.remove('hidden');
+      if (gameState.players === 'online') {
+        leaveOnlineRoomAndReturnToMenu();
+      } else {
+        gameState.started = false;
+        gameState.gameOver = false;
+        returnToSelectPage();
+      }
     });
 
     /**
