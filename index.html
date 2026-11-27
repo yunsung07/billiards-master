@@ -866,21 +866,21 @@
       CUE_LENGTH: 1.420,      // 큐 전체 길이 1,420mm (상대 69cm + 하대 72cm + 팁/선골 1cm)
       CUE_MASS: 0.500,        // 큐 무게 500g (0.500kg)
       CUE_TIP_R: 0.00575,     // 큐 팁 지름 11.5mm (반지름 5.75mm)
-      CUE_TIP_E: 0.72,
-      MAX_CUE_SPEED: 6.11,
+      CUE_TIP_E: 0.74,
+      MAX_CUE_SPEED: 7.20,
       G: 9.80665,
-      MU_SLIDE: 0.20,
-      MU_ROLL: 0.015,
-      MU_SPIN_Y: 0.045,
+      MU_SLIDE: 0.16,
+      MU_ROLL: 0.0085,
+      MU_SPIN_Y: 0.020,
       E_BED: 0.45,
-      E_BALL: 0.95,
-      MU_BALL: 0.055,
-      E_CUSHION: 0.78,
-      MU_CUSHION: 0.14,
-      SQUIRT_FACTOR: 0.048,
-      SWERVE_FACTOR: 0.013,
-      EPS_LIN: 0.012,
-      EPS_ANG: 0.25
+      E_BALL: 0.96,
+      MU_BALL: 0.045,
+      E_CUSHION: 0.82,
+      MU_CUSHION: 0.28,
+      SQUIRT_FACTOR: 0.026,
+      SWERVE_FACTOR: 0.011,
+      EPS_LIN: 0.010,
+      EPS_ANG: 0.22
     };
 
     /**
@@ -1022,8 +1022,34 @@
       yaw: -Math.PI / 2,
       pitch: 0.62,
       distance: 2.35,
-      target: new THREE.Vector3(0, 0.02, 0)
+      target: new THREE.Vector3(0, 0.02, 0),
+      topPanX: 0,
+      topPanZ: 0,
+      topZoom: 1.0
     };
+
+    const topViewRaycaster = new THREE.Raycaster();
+    const topViewBallPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -PHYS.R);
+    const topViewPointerNDC = new THREE.Vector2();
+    const topViewHitPoint = new THREE.Vector3();
+
+    function aimCueFromTopViewPointer(clientX, clientY) {
+      const cue = getCueBall();
+      if (!cue) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      topViewPointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      topViewPointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      topViewBallPlane.constant = -PHYS.R;
+      topViewRaycaster.setFromCamera(topViewPointerNDC, camera);
+      if (topViewRaycaster.ray.intersectPlane(topViewBallPlane, topViewHitPoint)) {
+        const dx = topViewHitPoint.x - cue.x;
+        const dz = topViewHitPoint.z - cue.z;
+        if (Math.hypot(dx, dz) > 0.008) {
+          gameState.aimYaw = Math.atan2(dz, dx);
+        }
+      }
+    }
 
     function getViewportMetrics() {
       const vv = window.visualViewport;
@@ -1052,30 +1078,37 @@
     function updateCameraTransform() {
       const { aspect } = getViewportMetrics();
       if (gameState.isTopView) {
-        const topHeight = aspect < 1.35
+        camOrbit.topZoom = Math.max(0.45, Math.min(1.45, camOrbit.topZoom));
+        camOrbit.topPanX = Math.max(-PHYS.HALF_L * 0.75, Math.min(PHYS.HALF_L * 0.75, camOrbit.topPanX));
+        camOrbit.topPanZ = Math.max(-PHYS.HALF_W * 0.75, Math.min(PHYS.HALF_W * 0.75, camOrbit.topPanZ));
+        const baseTopHeight = aspect < 1.35
           ? 3.35 * Math.min(2.05, 1.35 / Math.max(aspect, 0.46))
           : 3.35;
-        camera.position.set(0, topHeight, 0.001);
-        camera.lookAt(0, 0, 0);
+        const topHeight = baseTopHeight * camOrbit.topZoom;
+        camera.position.set(camOrbit.topPanX, topHeight, camOrbit.topPanZ + 0.001);
+        camera.lookAt(camOrbit.topPanX, 0, camOrbit.topPanZ);
         return;
       }
-      camOrbit.target.set(0, 0.02, 0);
-      const clampedPitch = Math.max(0.14, Math.min(1.48, camOrbit.pitch));
+      camOrbit.target.x = Math.max(-PHYS.HALF_L * 0.85, Math.min(PHYS.HALF_L * 0.85, camOrbit.target.x));
+      camOrbit.target.y = 0.02;
+      camOrbit.target.z = Math.max(-PHYS.HALF_W * 0.85, Math.min(PHYS.HALF_W * 0.85, camOrbit.target.z));
+      camOrbit.pitch = Math.max(0.14, Math.min(1.48, camOrbit.pitch));
+      camOrbit.distance = Math.max(0.65, Math.min(5.2, camOrbit.distance));
       const aspectDistScale = aspect < 1.05
         ? Math.min(1.38, 1.05 / Math.max(aspect, 0.46))
         : 1.0;
-      const clampedDist = Math.max(0.85, Math.min(4.8, camOrbit.distance)) * aspectDistScale;
-      const x = camOrbit.target.x + clampedDist * Math.cos(clampedPitch) * Math.cos(camOrbit.yaw);
-      const y = camOrbit.target.y + clampedDist * Math.sin(clampedPitch);
-      const z = camOrbit.target.z + clampedDist * Math.cos(clampedPitch) * Math.sin(camOrbit.yaw);
+      const clampedDist = camOrbit.distance * aspectDistScale;
+      const x = camOrbit.target.x + clampedDist * Math.cos(camOrbit.pitch) * Math.cos(camOrbit.yaw);
+      const y = camOrbit.target.y + clampedDist * Math.sin(camOrbit.pitch);
+      const z = camOrbit.target.z + clampedDist * Math.cos(camOrbit.pitch) * Math.sin(camOrbit.yaw);
       camera.position.set(x, y, z);
       camera.lookAt(camOrbit.target);
     }
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.58);
     scene.add(ambientLight);
 
-    const mainSpot = new THREE.DirectionalLight(0xfffbeb, 0.92);
+    const mainSpot = new THREE.DirectionalLight(0xfffbeb, 0.95);
     mainSpot.position.set(0.6, 3.2, 0.5);
     mainSpot.castShadow = true;
     mainSpot.shadow.mapSize.width = 2048;
@@ -1090,26 +1123,14 @@
     mainSpot.shadow.bias = -0.0005;
     scene.add(mainSpot);
 
-    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.35);
+    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.38);
     fillLight.position.set(-1.5, 2.0, -1.2);
     scene.add(fillLight);
 
     let currentTableGroup = null;
 
     function createBilliardClothTextures() {
-      const w = 512, h = 512;
-      const colorCanvas = document.createElement('canvas');
-      colorCanvas.width = w;
-      colorCanvas.height = h;
-      const cg = colorCanvas.getContext('2d');
-
-      const grad = cg.createRadialGradient(w * 0.5, h * 0.5, w * 0.08, w * 0.5, h * 0.5, w * 0.72);
-      grad.addColorStop(0, '#1c66c7');
-      grad.addColorStop(0.65, '#1656ad');
-      grad.addColorStop(1, '#11448c');
-      cg.fillStyle = grad;
-      cg.fillRect(0, 0, w, h);
-
+      const w = 256, h = 256;
       const bumpCanvas = document.createElement('canvas');
       bumpCanvas.width = w;
       bumpCanvas.height = h;
@@ -1117,9 +1138,7 @@
       bg.fillStyle = '#808080';
       bg.fillRect(0, 0, w, h);
 
-      const cImg = cg.getImageData(0, 0, w, h);
       const bImg = bg.getImageData(0, 0, w, h);
-      const cd = cImg.data;
       const bd = bImg.data;
 
       let seed = 1337;
@@ -1128,39 +1147,21 @@
         return (seed - 1) / 2147483646;
       }
 
-      for (let y = 0; y < h; y++) {
-        const rowThread = (y % 2 === 0) ? 3 : -3;
-        for (let x = 0; x < w; x++) {
-          const colThread = (x % 2 === 0) ? 3 : -3;
-          const fiber = (rand() - 0.5) * 14;
-          const delta = rowThread + colThread + fiber;
-          const idx = (y * w + x) * 4;
-
-          cd[idx] = Math.max(0, Math.min(255, cd[idx] + delta * 0.55));
-          cd[idx + 1] = Math.max(0, Math.min(255, cd[idx + 1] + delta * 0.75));
-          cd[idx + 2] = Math.max(0, Math.min(255, cd[idx + 2] + delta * 0.95));
-
-          const bVal = Math.max(0, Math.min(255, 128 + delta * 2.4));
-          bd[idx] = bVal;
-          bd[idx + 1] = bVal;
-          bd[idx + 2] = bVal;
-        }
+      for (let i = 0; i < bd.length; i += 4) {
+        const grain = (rand() - 0.5) * 20;
+        const bVal = Math.max(110, Math.min(146, Math.round(128 + grain)));
+        bd[i] = bVal;
+        bd[i + 1] = bVal;
+        bd[i + 2] = bVal;
       }
-      cg.putImageData(cImg, 0, 0);
       bg.putImageData(bImg, 0, 0);
-
-      const map = new THREE.CanvasTexture(colorCanvas);
-      map.encoding = THREE.sRGBEncoding;
-      map.wrapS = THREE.RepeatWrapping;
-      map.wrapT = THREE.RepeatWrapping;
-      map.repeat.set(3, 2);
 
       const bumpMap = new THREE.CanvasTexture(bumpCanvas);
       bumpMap.wrapS = THREE.RepeatWrapping;
       bumpMap.wrapT = THREE.RepeatWrapping;
-      bumpMap.repeat.set(6, 4);
+      bumpMap.repeat.set(14, 7);
 
-      return { map, bumpMap };
+      return { bumpMap };
     }
 
     function createWoodRailTextures() {
@@ -1175,7 +1176,7 @@
       bumpCanvas.height = h;
       const bg = bumpCanvas.getContext('2d');
 
-      cg.fillStyle = '#2d170e';
+      cg.fillStyle = '#33190e';
       cg.fillRect(0, 0, w, h);
       bg.fillStyle = '#808080';
       bg.fillRect(0, 0, w, h);
@@ -1187,26 +1188,26 @@
       }
 
       for (let y = 0; y < h; y++) {
-        const wave = Math.sin(y * 0.14) * 5 + Math.sin(y * 0.045) * 8;
-        const streak = (rand() - 0.5) * 14 + wave;
-        const r = Math.max(22, Math.min(82, 48 + streak));
-        const g = Math.max(10, Math.min(48, 25 + streak * 0.55));
-        const b = Math.max(6, Math.min(32, 16 + streak * 0.35));
+        const wave = Math.sin(y * 0.13) * 6 + Math.sin(y * 0.04) * 9;
+        const streak = (rand() - 0.5) * 12 + wave;
+        const r = Math.max(26, Math.min(92, 54 + streak));
+        const g = Math.max(12, Math.min(52, 27 + streak * 0.55));
+        const b = Math.max(7, Math.min(34, 17 + streak * 0.35));
         cg.fillStyle = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
         cg.fillRect(0, y, w, 1);
 
-        const bv = Math.max(96, Math.min(160, Math.round(128 + streak * 1.4)));
+        const bv = Math.max(102, Math.min(154, Math.round(128 + streak * 1.2)));
         bg.fillStyle = `rgb(${bv},${bv},${bv})`;
         bg.fillRect(0, y, w, 1);
       }
 
-      for (let i = 0; i < 650; i++) {
+      for (let i = 0; i < 850; i++) {
         const px = rand() * w;
         const py = rand() * h;
-        const len = 18 + rand() * 55;
-        cg.fillStyle = 'rgba(14, 6, 3, 0.28)';
+        const len = 20 + rand() * 65;
+        cg.fillStyle = 'rgba(14, 6, 3, 0.32)';
         cg.fillRect(px, py, len, 1);
-        bg.fillStyle = 'rgba(102, 102, 102, 0.35)';
+        bg.fillStyle = 'rgba(104, 104, 104, 0.35)';
         bg.fillRect(px, py, len, 1);
       }
 
@@ -1234,11 +1235,11 @@
 
       const bedGeo = new THREE.BoxGeometry(PHYS.TABLE_L, 0.08, PHYS.TABLE_W);
       const bedMat = new THREE.MeshStandardMaterial({
-        map: clothTex.map,
+        color: 0x1656ad,
         bumpMap: clothTex.bumpMap,
-        bumpScale: 0.0014,
-        roughness: 0.88,
-        metalness: 0.02
+        bumpScale: 0.0006,
+        roughness: 0.86,
+        metalness: 0.0
       });
       const bedMesh = new THREE.Mesh(bedGeo, bedMat);
       bedMesh.position.y = -0.04;
@@ -1248,12 +1249,11 @@
       const cushionH = PHYS.CUSHION_H;
       const cushionThick = 0.045;
       const cushionMat = new THREE.MeshStandardMaterial({
-        color: 0xdce8ff,
-        map: clothTex.map,
+        color: 0x1551a3,
         bumpMap: clothTex.bumpMap,
-        bumpScale: 0.0012,
-        roughness: 0.9,
-        metalness: 0.01
+        bumpScale: 0.0006,
+        roughness: 0.86,
+        metalness: 0.0
       });
 
       const longCushGeo = new THREE.BoxGeometry(PHYS.TABLE_L + cushionThick * 2, cushionH, cushionThick);
@@ -1282,14 +1282,33 @@
       eastCush.receiveShadow = true;
       tableGroup.add(eastCush);
 
+      // Subtle inner cushion nose trim bevel for realistic light catch
+      const noseTrimMat = new THREE.MeshStandardMaterial({
+        color: 0x114287,
+        roughness: 0.78,
+        metalness: 0.02
+      });
+      const longNoseGeo = new THREE.BoxGeometry(PHYS.TABLE_L, 0.005, 0.006);
+      [-1, 1].forEach(side => {
+        const nose = new THREE.Mesh(longNoseGeo, noseTrimMat);
+        nose.position.set(0, cushionH - 0.0025, side * (PHYS.HALF_W + 0.003));
+        tableGroup.add(nose);
+      });
+      const shortNoseGeo = new THREE.BoxGeometry(0.006, 0.005, PHYS.TABLE_W);
+      [-1, 1].forEach(side => {
+        const nose = new THREE.Mesh(shortNoseGeo, noseTrimMat);
+        nose.position.set(side * (PHYS.HALF_L + 0.003), cushionH - 0.0025, 0);
+        tableGroup.add(nose);
+      });
+
       const railW = 0.11;
       const railH = cushionH + 0.008;
       const woodMat = new THREE.MeshStandardMaterial({
         map: woodTex.map,
         bumpMap: woodTex.bumpMap,
-        bumpScale: 0.0018,
-        roughness: 0.36,
-        metalness: 0.08
+        bumpScale: 0.0014,
+        roughness: 0.30,
+        metalness: 0.06
       });
 
       const totalOuterL = PHYS.TABLE_L + (cushionThick + railW) * 2;
@@ -1298,34 +1317,58 @@
       const longRailGeo = new THREE.BoxGeometry(totalOuterL, railH, railW);
       const nRail = new THREE.Mesh(longRailGeo, woodMat);
       nRail.position.set(0, railH / 2 - 0.004, -PHYS.HALF_W - cushionThick - railW / 2);
+      nRail.castShadow = true;
       nRail.receiveShadow = true;
       tableGroup.add(nRail);
 
       const sRail = new THREE.Mesh(longRailGeo, woodMat);
       sRail.position.set(0, railH / 2 - 0.004, PHYS.HALF_W + cushionThick + railW / 2);
+      sRail.castShadow = true;
       sRail.receiveShadow = true;
       tableGroup.add(sRail);
 
       const shortRailGeo = new THREE.BoxGeometry(railW, railH, PHYS.TABLE_W + cushionThick * 2);
       const wRail = new THREE.Mesh(shortRailGeo, woodMat);
       wRail.position.set(-PHYS.HALF_L - cushionThick - railW / 2, railH / 2 - 0.004, 0);
+      wRail.castShadow = true;
       wRail.receiveShadow = true;
       tableGroup.add(wRail);
 
       const eRail = new THREE.Mesh(shortRailGeo, woodMat);
       eRail.position.set(PHYS.HALF_L + cushionThick + railW / 2, railH / 2 - 0.004, 0);
+      eRail.castShadow = true;
       eRail.receiveShadow = true;
       tableGroup.add(eRail);
 
+      // Realistic brushed metallic corner castings
+      const cornerMat = new THREE.MeshStandardMaterial({
+        color: 0x262930,
+        roughness: 0.28,
+        metalness: 0.72
+      });
+      const cornerGeo = new THREE.BoxGeometry(railW + 0.006, railH + 0.002, railW + 0.006);
+      [-1, 1].forEach(sx => {
+        [-1, 1].forEach(sz => {
+          const cap = new THREE.Mesh(cornerGeo, cornerMat);
+          cap.position.set(
+            sx * (PHYS.HALF_L + cushionThick + railW / 2),
+            railH / 2 - 0.0035,
+            sz * (PHYS.HALF_W + cushionThick + railW / 2)
+          );
+          cap.receiveShadow = true;
+          tableGroup.add(cap);
+        });
+      });
+
       const cabinetGeo = new THREE.BoxGeometry(totalOuterL - 0.06, 0.22, totalOuterW - 0.06);
-      const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x161412, roughness: 1.0, metalness: 0.0 });
+      const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x161412, roughness: 0.85, metalness: 0.05 });
       const cabinet = new THREE.Mesh(cabinetGeo, cabinetMat);
       cabinet.position.y = -0.15;
       tableGroup.add(cabinet);
 
       // 프레임 포인트: 장쿠션 8등분, 단쿠션 4등분 (3구: 355.5mm 간격, 4구: 306mm 간격)
       const diamondGeo = new THREE.BoxGeometry(0.014, 0.003, 0.014);
-      const diamondMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.2 });
+      const diamondMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.22, metalness: 0.35 });
 
       for (let i = 1; i <= 7; i++) {
         const dx = -PHYS.HALF_L + (PHYS.TABLE_L / 8) * i;
@@ -1367,14 +1410,12 @@
       g.fillRect(0, 0, 256, 128);
 
       g.fillStyle = dotHex;
-      g.globalAlpha = 0.75;
+      g.globalAlpha = 0.85;
       [42, 128, 214].forEach(x => {
         g.beginPath();
-        g.arc(x, 64, 8, 0, Math.PI * 2);
+        g.arc(x, 64, 7, 0, Math.PI * 2);
         g.fill();
       });
-      g.globalAlpha = 0.24;
-      g.fillRect(0, 62, 256, 4);
 
       const tex = new THREE.CanvasTexture(c);
       tex.encoding = THREE.sRGBEncoding;
@@ -1520,7 +1561,7 @@
     function focusCameraOnCueBall() {
       const cue = getCueBall();
       if (!cue) return;
-      camOrbit.target.set(0, 0.02, 0);
+      camOrbit.target.set(cue.x * 0.42, 0.02, cue.z * 0.42);
       camOrbit.yaw = gameState.aimYaw + Math.PI;
       updateCameraTransform();
     }
@@ -1662,7 +1703,7 @@
       primaryLineMat.color.setHex(gameState.aimLocked ? 0xfbbf24 : 0xffffff);
       const previewPower = gameState.shotPower > 0.03 ? gameState.shotPower : 0.45;
       const elevRad = THREE.MathUtils.degToRad(gameState.cueElevationDeg);
-      const squirtAngle = -gameState.spin.x * PHYS.SQUIRT_FACTOR * Math.cos(elevRad) * (0.4 + 0.6 * previewPower);
+      const squirtAngle = -gameState.spin.x * PHYS.SQUIRT_FACTOR * Math.cos(elevRad) * (0.35 + 0.65 * previewPower);
       const effYaw = gameState.aimYaw + squirtAngle;
 
       const dirX = Math.cos(effYaw);
@@ -1739,7 +1780,8 @@
         const vn = dirX * railNormal.x + dirZ * railNormal.z;
         const vt = dirX * tx + dirZ * tz;
         const vnAfter = -PHYS.E_CUSHION * vn;
-        const vtAfter = vt - gameState.spin.x * 0.28 * Math.abs(vn);
+        const spinThrow = Math.max(-0.58 * Math.abs(vn), Math.min(0.58 * Math.abs(vn), -gameState.spin.x * 0.48 * Math.abs(vn)));
+        const vtAfter = vt + spinThrow;
         let rx = vnAfter * railNormal.x + vtAfter * tx;
         let rz = vnAfter * railNormal.z + vtAfter * tz;
         const len = Math.hypot(rx, rz) || 1;
@@ -1798,11 +1840,11 @@
       const cosElev = Math.cos(elevRad);
       const sinElev = Math.sin(elevRad);
 
-      const maxOffset = 0.62 * PHYS.R;
+      const maxOffset = 0.65 * PHYS.R;
       const a = spinX * maxOffset;
       const b = -spinY * maxOffset;
 
-      const squirt = -spinX * PHYS.SQUIRT_FACTOR * cosElev * (0.4 + 0.6 * power);
+      const squirt = -spinX * PHYS.SQUIRT_FACTOR * cosElev * (0.35 + 0.65 * power);
       const launchYaw = aimYaw + squirt;
 
       const dirX = Math.cos(launchYaw);
@@ -1829,6 +1871,7 @@
       cue.wx = dirZ * wRoll + rightZ * wMasseTilt;
       cue.wz = -dirX * wRoll - rightX * wMasseTilt;
       cue.wy = wySpin;
+      cue.swerveGain = elevationDeg > 8 ? Math.sin(elevRad) : 0;
       cue.state = cue.vy > 0.05 ? 'AIRBORNE' : 'SLIDING';
 
       gameState.shotLog = {
@@ -1870,6 +1913,7 @@
 
       gameState.shotPower = 0;
       updatePowerGauge(0);
+      setAimLocked(false, true);
 
       if (gameState.players === 'online' && gameState.online.guestJoined && gameState.online.roomRef) {
         gameState.online.lastShotId = shotPayload.shotId;
@@ -1894,6 +1938,7 @@
           if (b.y <= R + 1e-4 && Math.abs(b.vy) < 1e-3 && linHoriz < PHYS.EPS_LIN && angTotal < PHYS.EPS_ANG) {
             b.vx = 0; b.vy = 0; b.vz = 0;
             b.wx = 0; b.wy = 0; b.wz = 0;
+            b.swerveGain = 0;
             b.y = R;
             b.state = 'STOPPED';
             continue;
@@ -1924,7 +1969,7 @@
             const uz = b.vz - R * b.wx;
             const slipSpeed = Math.hypot(ux, uz);
 
-            if (slipSpeed > 0.015) {
+            if (slipSpeed > 0.012) {
               b.state = 'SLIDING';
               const uHatX = ux / slipSpeed;
               const uHatZ = uz / slipSpeed;
@@ -1937,8 +1982,11 @@
               const nextWx = b.wx + angAccel * uHatZ * h;
               const nextWz = b.wz - angAccel * uHatX * h;
 
-              const swerveAx = -PHYS.SWERVE_FACTOR * b.wy * uz;
-              const swerveAz = PHYS.SWERVE_FACTOR * b.wy * ux;
+              // Side spin (wy) does NOT curve a level shot before cushion contact;
+              // lateral swerve occurs only when cue elevation tilts the spin axis (massé).
+              const swerveFactor = PHYS.SWERVE_FACTOR * (b.swerveGain || 0);
+              const swerveAx = -swerveFactor * b.wy * uz;
+              const swerveAz = swerveFactor * b.wy * ux;
 
               const finalVx = nextVx + swerveAx * h;
               const finalVz = nextVz + swerveAz * h;
@@ -2051,9 +2099,10 @@
       const vnAfter = -PHYS.E_CUSHION * vn;
       const jn = vnAfter - vn;
 
+      // Side spin (wy) grips the rubber cushion nose upon impact and converts into lateral rebound velocity
       const vSlipT = vt - R * b.wy;
       const maxJt = PHYS.MU_CUSHION * jn;
-      const jt = Math.max(-maxJt, Math.min(maxJt, -(2 / 7) * vSlipT));
+      const jt = Math.max(-maxJt, Math.min(maxJt, -(2 / 5) * vSlipT));
 
       const vtAfter = vt + jt;
       b.wy = b.wy - (5 * jt) / (2 * R);
@@ -2252,6 +2301,7 @@
           gameState.isMoving = false;
           gameState.shotPower = 0;
           updatePowerGauge(0);
+          setAimLocked(false, true);
           resetHitIndicators();
           applyBallPositions(sync.balls);
           gameState.scores = sync.scores || { 1: 0, 2: 0 };
@@ -2378,6 +2428,7 @@
         // 4구 (사구) 규칙
         const hitRed1 = log.hitBalls.has('red1');
         const hitRed2 = log.hitBalls.has('red2');
+        const hitNoRed = !hitRed1 && !hitRed2;
         const isFinishAttempt = gameState.threeCushionFinish && (gameState.scores[p] >= gameState.targetScore);
         const reqFinishCount = gameState.finishTargetCount || 1;
 
@@ -2450,6 +2501,21 @@
             toastMsg = '나이스 샷! (+10점)';
             toastTone = 'emerald';
           }
+        } else if (hitNoRed && gameState.minusEnabled) {
+          if (gameState.backMinusEnabled) {
+            gameState.scores[p] = gameState.scores[p] - 10;
+            toastMsg = gameState.scores[p] < 0
+              ? '뒷 빡! 빨간공 미접촉 (-10점)'
+              : '빡! 빨간공 미접촉 (-10점)';
+          } else {
+            const prev = gameState.scores[p];
+            gameState.scores[p] = Math.max(0, prev - 10);
+            toastMsg = prev > 0
+              ? '빡! 빨간공 미접촉 (-10점)'
+              : '빡! 빨간공 미접촉 (0점 유지)';
+          }
+          toastTone = 'rose';
+          sound.playFoulBuzz();
         } else {
           toastMsg = log.hitBalls.size === 0 ? '노 히트! 턴 교대' : '빨간공 1개만 접촉 (미스)';
           toastTone = 'slate';
@@ -2747,6 +2813,24 @@
     let lastClientY = 0;
     let shotDragStartY = 0;
 
+    function panTableCamera(dx, dy) {
+      if (gameState.isTopView) {
+        const panScale = 0.0028 * camOrbit.topZoom;
+        camOrbit.topPanX -= dx * panScale;
+        camOrbit.topPanZ -= dy * panScale;
+        updateCameraTransform();
+        return;
+      }
+      const panScale = 0.0014 * camOrbit.distance;
+      const rightX = Math.sin(camOrbit.yaw);
+      const rightZ = -Math.cos(camOrbit.yaw);
+      const fwdX = -Math.cos(camOrbit.yaw);
+      const fwdZ = -Math.sin(camOrbit.yaw);
+      camOrbit.target.x += (-dx * rightX + dy * fwdX) * panScale;
+      camOrbit.target.z += (-dx * rightZ + dy * fwdZ) * panScale;
+      updateCameraTransform();
+    }
+
     domCanvas.addEventListener('contextmenu', e => e.preventDefault());
 
     domCanvas.addEventListener('mousedown', e => {
@@ -2755,7 +2839,9 @@
       lastClientX = e.clientX;
       lastClientY = e.clientY;
 
-      if (e.button === 2 || e.shiftKey) {
+      if (e.button === 1 || e.ctrlKey || e.altKey) {
+        pointerMode = 'pan';
+      } else if (e.button === 2 || e.shiftKey) {
         pointerMode = 'orbit';
       } else if (e.button === 0 && canControlCue()) {
         if (gameState.aimLocked) {
@@ -2765,7 +2851,12 @@
           updatePowerGauge(0.05);
         } else {
           pointerMode = 'aim_only';
+          if (gameState.isTopView) {
+            aimCueFromTopViewPointer(e.clientX, e.clientY);
+          }
         }
+      } else if (e.button === 0) {
+        pointerMode = 'orbit';
       }
     });
 
@@ -2776,7 +2867,9 @@
       lastClientX = e.clientX;
       lastClientY = e.clientY;
 
-      if (pointerMode === 'orbit') {
+      if (pointerMode === 'pan') {
+        panTableCamera(dx, dy);
+      } else if (pointerMode === 'orbit') {
         if (gameState.isTopView) {
           gameState.isTopView = false;
           document.getElementById('btn-toggle-view').textContent = '3D뷰 / 탑뷰 (V)';
@@ -2785,7 +2878,11 @@
         camOrbit.pitch += dy * 0.0065;
         updateCameraTransform();
       } else if (pointerMode === 'aim_only' && canControlCue() && !gameState.aimLocked) {
-        gameState.aimYaw += dx * 0.0045;
+        if (gameState.isTopView) {
+          aimCueFromTopViewPointer(e.clientX, e.clientY);
+        } else {
+          gameState.aimYaw += dx * 0.0045;
+        }
       } else if (pointerMode === 'pull_shot' && canControlCue() && gameState.aimLocked) {
         const pullY = e.clientY - shotDragStartY;
         const power = Math.max(0.05, Math.min(1.0, 0.05 + pullY / 190));
@@ -2821,7 +2918,14 @@
           updatePowerGauge(0.05);
         } else {
           pointerMode = 'aim_only';
+          if (gameState.isTopView) {
+            aimCueFromTopViewPointer(e.touches[0].clientX, e.touches[0].clientY);
+          }
         }
+      } else if (e.touches.length === 1) {
+        pointerMode = 'orbit';
+        lastClientX = e.touches[0].clientX;
+        lastClientY = e.touches[0].clientY;
       } else if (e.touches.length === 2) {
         if (pointerMode === 'pull_shot') {
           gameState.shotPower = 0;
@@ -2840,23 +2944,35 @@
     domCanvas.addEventListener('touchmove', e => {
       e.preventDefault();
       if (pointerMode === 'aim_only' && e.touches.length === 1 && canControlCue() && !gameState.aimLocked) {
-        const dx = e.touches[0].clientX - lastClientX;
-        lastClientX = e.touches[0].clientX;
-        gameState.aimYaw += dx * 0.0055;
+        if (gameState.isTopView) {
+          aimCueFromTopViewPointer(e.touches[0].clientX, e.touches[0].clientY);
+        } else {
+          const dx = e.touches[0].clientX - lastClientX;
+          lastClientX = e.touches[0].clientX;
+          gameState.aimYaw += dx * 0.0055;
+        }
       } else if (pointerMode === 'pull_shot' && e.touches.length === 1 && canControlCue() && gameState.aimLocked) {
         const pullY = e.touches[0].clientY - shotDragStartY;
         const power = Math.max(0.05, Math.min(1.0, 0.05 + pullY / 170));
         gameState.shotPower = power;
         updatePowerGauge(power);
-      } else if (pointerMode === 'orbit' && e.touches.length === 2) {
+      } else if (pointerMode === 'orbit' && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - lastClientX;
+        const dy = e.touches[0].clientY - lastClientY;
+        lastClientX = e.touches[0].clientX;
+        lastClientY = e.touches[0].clientY;
         if (gameState.isTopView) {
-          gameState.isTopView = false;
-          document.getElementById('btn-toggle-view').textContent = '3D뷰 / 탑뷰 (V)';
+          panTableCamera(dx, dy);
+        } else {
+          camOrbit.yaw += dx * 0.007;
+          camOrbit.pitch += dy * 0.007;
+          updateCameraTransform();
         }
+      } else if (pointerMode === 'orbit' && e.touches.length === 2) {
         const midX = (e.touches[0].clientX + e.touches[1].clientX) * 0.5;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) * 0.5;
-        camOrbit.yaw += (midX - lastClientX) * 0.007;
-        camOrbit.pitch += (midY - lastClientY) * 0.007;
+        const dx = midX - lastClientX;
+        const dy = midY - lastClientY;
         lastClientX = midX;
         lastClientY = midY;
 
@@ -2864,8 +2980,17 @@
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
-        if (lastPinchDist > 0) {
-          camOrbit.distance -= (pinchDist - lastPinchDist) * 0.005;
+        if (gameState.isTopView) {
+          panTableCamera(dx, dy);
+          if (lastPinchDist > 0) {
+            camOrbit.topZoom -= (pinchDist - lastPinchDist) * 0.0025;
+          }
+        } else {
+          camOrbit.yaw += dx * 0.007;
+          camOrbit.pitch += dy * 0.007;
+          if (lastPinchDist > 0) {
+            camOrbit.distance -= (pinchDist - lastPinchDist) * 0.005;
+          }
         }
         lastPinchDist = pinchDist;
         updateCameraTransform();
@@ -2883,7 +3008,11 @@
 
     domCanvas.addEventListener('wheel', e => {
       e.preventDefault();
-      if (gameState.isTopView) return;
+      if (gameState.isTopView) {
+        camOrbit.topZoom += e.deltaY * 0.0008;
+        updateCameraTransform();
+        return;
+      }
       camOrbit.distance += e.deltaY * 0.0015;
       updateCameraTransform();
     }, { passive: false });
@@ -3073,8 +3202,13 @@
       gameState.isTopView = !gameState.isTopView;
       const btn = document.getElementById('btn-toggle-view');
       btn.textContent = gameState.isTopView ? '탑뷰 고정 (V)' : '3D뷰 / 탑뷰 (V)';
-      if (!gameState.isTopView) {
-        camOrbit.target.set(0, 0.02, 0);
+      if (gameState.isTopView) {
+        camOrbit.topPanX = 0;
+        camOrbit.topPanZ = 0;
+        camOrbit.topZoom = 1.0;
+      } else {
+        const cue = getCueBall();
+        camOrbit.target.set(cue ? cue.x * 0.42 : 0, 0.02, cue ? cue.z * 0.42 : 0);
       }
       updateCameraTransform();
     }
