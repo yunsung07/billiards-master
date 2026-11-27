@@ -2887,7 +2887,7 @@
       const u = gameState.ranked.user;
       if (!u || !rtdb) return;
       try {
-        const snap = await rtdb.ref(`rankedUsers/${u.safeKey}`).get();
+        const snap = await rtdb.ref(`rankedUsers/${u.safeKey}`).once('value');
         if (snap.exists()) {
           const val = snap.val();
           gameState.ranked.user = {
@@ -2907,13 +2907,15 @@
     }
 
     async function handleRankedRegister() {
+      const msgEl = document.getElementById('ranked-auth-msg');
+      const regBtn = document.getElementById('btn-ranked-register');
       if (!rtdb) {
-        showToast('Firebase 데이터베이스 연결을 확인해 주세요.', 'rose');
+        msgEl.textContent = '⚠️ Firebase 데이터베이스에 연결되지 않았습니다.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
         return;
       }
       const rawId = document.getElementById('ranked-auth-id').value.trim();
       const rawPw = document.getElementById('ranked-auth-pw').value;
-      const msgEl = document.getElementById('ranked-auth-msg');
 
       if (rawId.length < 2 || rawId.length > 16) {
         msgEl.textContent = '⚠️ 아이디는 2자 이상 16자 이하로 입력해 주세요.';
@@ -2926,44 +2928,62 @@
         return;
       }
 
-      const safeKey = sanitizeFirebaseKey(rawId);
-      const userRef = rtdb.ref(`rankedUsers/${safeKey}`);
-      const snap = await userRef.get();
-      if (snap.exists()) {
-        msgEl.textContent = '⚠️ 이미 사용 중인 아이디입니다. 다른 아이디를 입력하거나 로그인하세요.';
+      regBtn.disabled = true;
+      msgEl.textContent = '⏳ 회원가입 처리 중...';
+      msgEl.className = 'text-[11px] text-sky-300 font-bold';
+
+      try {
+        const safeKey = sanitizeFirebaseKey(rawId);
+        const userRef = rtdb.ref(`rankedUsers/${safeKey}`);
+        const snap = await userRef.once('value');
+        if (snap.exists()) {
+          msgEl.textContent = '⚠️ 이미 사용 중인 아이디입니다. 다른 아이디를 입력하거나 로그인하세요.';
+          msgEl.className = 'text-[11px] text-rose-400 font-bold';
+          return;
+        }
+
+        const pwHash = await hashPassword(rawPw);
+        const newProfile = {
+          userId: rawId,
+          pwHash,
+          rp3: 1000,
+          rp4: 1000,
+          wins3: 0,
+          losses3: 0,
+          wins4: 0,
+          losses4: 0,
+          createdAt: Date.now()
+        };
+        await userRef.set(newProfile);
+
+        gameState.ranked.user = { ...newProfile, safeKey };
+        localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
+        document.getElementById('ranked-auth-pw').value = '';
+        updateRankedAccountUI();
+        showToast(`회원가입 완료! [${rawId}] 님 환영합니다 (초기 1,000 RP)`, 'emerald');
+      } catch (err) {
+        console.error('Ranked register error:', err);
+        const isPerm = String((err && err.message) || err).toLowerCase().includes('permission');
+        msgEl.textContent = isPerm
+          ? '⚠️ Firebase DB 권한 거부: Firebase 규칙에서 rankedUsers 읽기/쓰기를 허용해 주세요.'
+          : `⚠️ 회원가입 오류: ${err && err.message ? err.message : '네트워크 확인 필요'}`;
         msgEl.className = 'text-[11px] text-rose-400 font-bold';
-        return;
+        showToast('회원가입에 실패했습니다. 안내 문구를 확인해 주세요.', 'rose');
+      } finally {
+        regBtn.disabled = false;
       }
-
-      const pwHash = await hashPassword(rawPw);
-      const newProfile = {
-        userId: rawId,
-        pwHash,
-        rp3: 1000,
-        rp4: 1000,
-        wins3: 0,
-        losses3: 0,
-        wins4: 0,
-        losses4: 0,
-        createdAt: Date.now()
-      };
-      await userRef.set(newProfile);
-
-      gameState.ranked.user = { ...newProfile, safeKey };
-      localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
-      document.getElementById('ranked-auth-pw').value = '';
-      updateRankedAccountUI();
-      showToast(`회원가입 완료! [${rawId}] 님 환영합니다 (초기 1,000 RP)`, 'emerald');
     }
 
     async function handleRankedLogin() {
+      const msgEl = document.getElementById('ranked-auth-msg');
+      const loginBtn = document.getElementById('btn-ranked-login');
       if (!rtdb) {
-        showToast('Firebase 데이터베이스 연결을 확인해 주세요.', 'rose');
+        msgEl.textContent = '⚠️ Firebase 데이터베이스에 연결되지 않았습니다.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
         return;
       }
       const rawId = document.getElementById('ranked-auth-id').value.trim();
       const rawPw = document.getElementById('ranked-auth-pw').value;
-      const msgEl = document.getElementById('ranked-auth-msg');
 
       if (!rawId || !rawPw) {
         msgEl.textContent = '⚠️ 아이디와 비밀번호를 모두 입력해 주세요.';
@@ -2971,36 +2991,52 @@
         return;
       }
 
-      const safeKey = sanitizeFirebaseKey(rawId);
-      const snap = await rtdb.ref(`rankedUsers/${safeKey}`).get();
-      if (!snap.exists()) {
-        msgEl.textContent = '⚠️ 존재하지 않는 아이디입니다. 회원가입을 먼저 진행해 주세요.';
-        msgEl.className = 'text-[11px] text-rose-400 font-bold';
-        return;
-      }
+      loginBtn.disabled = true;
+      msgEl.textContent = '⏳ 로그인 확인 중...';
+      msgEl.className = 'text-[11px] text-sky-300 font-bold';
 
-      const val = snap.val();
-      const pwHash = await hashPassword(rawPw);
-      if (val.pwHash !== pwHash) {
-        msgEl.textContent = '⚠️ 비밀번호가 일치하지 않습니다.';
-        msgEl.className = 'text-[11px] text-rose-400 font-bold';
-        return;
-      }
+      try {
+        const safeKey = sanitizeFirebaseKey(rawId);
+        const snap = await rtdb.ref(`rankedUsers/${safeKey}`).once('value');
+        if (!snap.exists()) {
+          msgEl.textContent = '⚠️ 존재하지 않는 아이디입니다. 회원가입을 먼저 진행해 주세요.';
+          msgEl.className = 'text-[11px] text-rose-400 font-bold';
+          return;
+        }
 
-      gameState.ranked.user = {
-        userId: val.userId,
-        safeKey,
-        rp3: val.rp3 ?? 1000,
-        rp4: val.rp4 ?? 1000,
-        wins3: val.wins3 ?? 0,
-        losses3: val.losses3 ?? 0,
-        wins4: val.wins4 ?? 0,
-        losses4: val.losses4 ?? 0
-      };
-      localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
-      document.getElementById('ranked-auth-pw').value = '';
-      updateRankedAccountUI();
-      showToast(`[${val.userId}] 님 로그인 성공!`, 'emerald');
+        const val = snap.val();
+        const pwHash = await hashPassword(rawPw);
+        if (val.pwHash !== pwHash) {
+          msgEl.textContent = '⚠️ 비밀번호가 일치하지 않습니다.';
+          msgEl.className = 'text-[11px] text-rose-400 font-bold';
+          return;
+        }
+
+        gameState.ranked.user = {
+          userId: val.userId,
+          safeKey,
+          rp3: val.rp3 ?? 1000,
+          rp4: val.rp4 ?? 1000,
+          wins3: val.wins3 ?? 0,
+          losses3: val.losses3 ?? 0,
+          wins4: val.wins4 ?? 0,
+          losses4: val.losses4 ?? 0
+        };
+        localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
+        document.getElementById('ranked-auth-pw').value = '';
+        updateRankedAccountUI();
+        showToast(`[${val.userId}] 님 로그인 성공!`, 'emerald');
+      } catch (err) {
+        console.error('Ranked login error:', err);
+        const isPerm = String((err && err.message) || err).toLowerCase().includes('permission');
+        msgEl.textContent = isPerm
+          ? '⚠️ Firebase DB 권한 거부: Firebase 규칙에서 rankedUsers 읽기/쓰기를 허용해 주세요.'
+          : `⚠️ 로그인 오류: ${err && err.message ? err.message : '네트워크 확인 필요'}`;
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
+        showToast('로그인에 실패했습니다.', 'rose');
+      } finally {
+        loginBtn.disabled = false;
+      }
     }
 
     function handleRankedLogout() {
@@ -3095,7 +3131,7 @@
         stEl.textContent = `🔍 비슷한 점수대 탐색 중 (${elapsedSec}초 · 허용 점수차 ±${allowedDiff} RP)...`;
 
         try {
-          const listSnap = await rtdb.ref(queuePath).get();
+          const listSnap = await rtdb.ref(queuePath).once('value');
           if (!listSnap.exists() || !gameState.ranked.searching) return;
 
           const candidates = [];
@@ -3185,7 +3221,7 @@
       const ref = rtdb.ref(`rooms/${roomCode}`);
       let data = null;
       for (let i = 0; i < 10; i++) {
-        const snap = await ref.get();
+        const snap = await ref.once('value');
         if (snap.exists() && snap.val().matchStarted) {
           data = snap.val();
           break;
@@ -3351,7 +3387,7 @@
       }
 
       try {
-        const snap = await rtdb.ref('rankedUsers').get();
+        const snap = await rtdb.ref('rankedUsers').once('value');
         if (!snap.exists()) {
           tbody.innerHTML = '<tr><td colspan="4" class="py-12 text-center text-slate-400">아직 등록된 랭킹 유저가 없습니다. 랭크전에서 첫 승리를 기록해 보세요!</td></tr>';
           return;
@@ -3466,7 +3502,7 @@
       }
 
       const ref = rtdb.ref(`rooms/${code}`);
-      const snap = await ref.get();
+      const snap = await ref.once('value');
       if (!snap.exists()) {
         showToast(`방 [${code}]을 찾을 수 없습니다. 방 코드를 다시 확인하세요.`, 'rose');
         return false;
