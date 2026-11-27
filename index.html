@@ -28,7 +28,7 @@
       background: #090d16;
       color: #f8fafc;
     }
-    input[type="text"] {
+    input[type="text"], input[type="password"] {
       user-select: text;
       -webkit-user-select: text;
     }
@@ -164,199 +164,176 @@
 
   <!-- GAME PAGE (Separate view from Selection Page) -->
   <div id="game-page" class="hidden fixed inset-0">
-  <!-- 3D WebGL Canvas Container -->
-  <div id="canvas-container"></div>
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
 
-  <!-- Floating HUD Layer -->
-  <div id="ui-layer">
-    <!-- TOP HUD (Floating Dynamic Island Style) -->
-    <header class="w-full px-2 sm:px-5 pt-2 sm:pt-3 flex flex-wrap items-center justify-center sm:justify-between gap-1.5 sm:gap-2 pointer-events-none">
-      <!-- Left: Floating Pill - Menu, Mode & Room Code Badge -->
-      <div class="pointer-auto flex items-center gap-1.5 bg-black/80 backdrop-blur-xl px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/15 shadow-[0_10px_28px_rgba(0,0,0,0.65)]">
-        <button id="btn-menu" class="hidden px-2.5 sm:px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-100 text-xs sm:text-sm font-bold border border-white/10 transition flex items-center gap-1.5">
-          <span>⚙️</span>
-          <span>메뉴</span>
-        </button>
-        <div class="hidden md:flex items-center gap-1.5">
-          <span id="hud-mode-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-600 text-white">3구 (쓰리쿠션)</span>
-          <span id="hud-play-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/10">1인 연습</span>
-          <span id="hud-inning-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/10 text-amber-300 border border-white/10">1이닝</span>
+    <!-- Floating HUD Layer -->
+    <div id="ui-layer">
+      <!-- TOP HUD (Floating Dynamic Island Style) -->
+      <header class="w-full px-2 sm:px-5 pt-2 sm:pt-3 flex flex-wrap items-center justify-center sm:justify-between gap-1.5 sm:gap-2 pointer-events-none">
+        <!-- Left: Floating Pill - Menu, Mode & Room Code Badge -->
+        <div class="pointer-auto flex items-center gap-1.5 bg-black/80 backdrop-blur-xl px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/15 shadow-[0_10px_28px_rgba(0,0,0,0.65)]">
+          <button id="btn-menu" class="hidden px-2.5 sm:px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-100 text-xs sm:text-sm font-bold border border-white/10 transition flex items-center gap-1.5">
+            <span>⚙️</span>
+            <span>메뉴</span>
+          </button>
+          <div class="hidden md:flex items-center gap-1.5">
+            <span id="hud-mode-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-600 text-white">3구 (쓰리쿠션)</span>
+            <span id="hud-play-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/10">1인 연습</span>
+            <span id="hud-inning-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/10 text-amber-300 border border-white/10">1이닝</span>
+          </div>
+          <button id="hud-room-pill" class="hidden px-2.5 py-1 rounded-full bg-indigo-600/35 hover:bg-indigo-600/55 border border-indigo-400/50 text-[11px] sm:text-xs font-black text-indigo-200 flex items-center gap-1.5 transition" title="클릭하여 방 코드 복사">
+            <span>🌐 방 코드:</span>
+            <span id="hud-room-code" class="text-amber-300 tracking-widest">-----</span>
+            <span class="text-[10px] bg-indigo-500/40 px-1.5 py-0.2 rounded-full">복사</span>
+          </button>
         </div>
-        <button id="hud-room-pill" class="hidden px-2.5 py-1 rounded-full bg-indigo-600/35 hover:bg-indigo-600/55 border border-indigo-400/50 text-[11px] sm:text-xs font-black text-indigo-200 flex items-center gap-1.5 transition" title="클릭하여 방 코드 복사">
-          <span>🌐 방 코드:</span>
-          <span id="hud-room-code" class="text-amber-300 tracking-widest">-----</span>
-          <span class="text-[10px] bg-indigo-500/40 px-1.5 py-0.2 rounded-full">복사</span>
-        </button>
+
+        <!-- Center: Dynamic Island Scoreboard & Live Shot Telemetry -->
+        <div class="pointer-auto flex items-center gap-1.5 sm:gap-3 bg-black/85 backdrop-blur-xl px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.75)]">
+          <!-- Player 1 (White Cue Ball) -->
+          <div id="p1-box" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-2 border-amber-400 bg-slate-800/90 transition-all">
+            <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-white to-slate-300 border border-slate-400 shadow shrink-0"></div>
+            <div class="leading-tight">
+              <div class="text-[9px] sm:text-[10px] text-slate-300 font-bold flex items-center gap-1">
+                <span id="p1-label">1P (흰공)</span>
+                <span id="p1-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+              </div>
+              <div class="text-xs sm:text-base font-black text-white flex items-center">
+                <span><span id="p1-score">0</span><span class="text-[10px] sm:text-xs font-normal text-slate-400"> / <span class="target-score-txt">30</span></span></span>
+                <span id="p1-finish-badge" class="hidden ml-1 sm:ml-1.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-500/30 text-amber-200 border border-amber-400/60">3쿠션 0/1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cushion & Object Ball Hit Status -->
+          <div class="flex flex-col items-center px-1 sm:px-1.5 min-w-[78px] sm:min-w-[96px]">
+            <div class="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-sm font-black">
+              <span id="hud-cushions" class="text-cyan-400">쿠션: 0</span>
+              <span class="text-slate-600">|</span>
+              <span id="hud-run" class="text-amber-300 text-[11px] sm:text-xs">연속 0</span>
+            </div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span id="ind-hit1" class="px-1.5 sm:px-2 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/10 text-slate-400 border border-white/10">1적구</span>
+              <span id="ind-hit2" class="px-1.5 sm:px-2 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/10 text-slate-400 border border-white/10">2적구</span>
+            </div>
+          </div>
+
+          <!-- Player 2 (Yellow Cue Ball) -->
+          <div id="p2-box" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-2 border-transparent opacity-65 transition-all">
+            <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 border border-amber-600 shadow shrink-0"></div>
+            <div class="leading-tight">
+              <div class="text-[9px] sm:text-[10px] text-slate-300 font-bold flex items-center gap-1">
+                <span id="p2-label">2P (노란공)</span>
+                <span id="p2-dot" class="hidden w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+              </div>
+              <div class="text-xs sm:text-base font-black text-yellow-300 flex items-center">
+                <span><span id="p2-score">0</span><span class="text-[10px] sm:text-xs font-normal text-slate-400"> / <span class="target-score-txt">30</span></span></span>
+                <span id="p2-finish-badge" class="hidden ml-1 sm:ml-1.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-500/30 text-amber-200 border border-amber-400/60">3쿠션 0/1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Floating Pill - Aiming Guideline, Camera View, Sound & Reset -->
+        <div class="pointer-auto flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 bg-black/80 backdrop-blur-xl px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full border border-white/15 shadow-[0_10px_28px_rgba(0,0,0,0.65)]">
+          <button id="btn-toggle-guide" class="px-2 sm:px-3 py-1 rounded-full bg-emerald-600/30 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/50 text-[11px] sm:text-xs font-extrabold transition" title="단축키: G">
+            조준선: ON (G)
+          </button>
+          <button id="btn-toggle-view" class="px-2 sm:px-3 py-1 rounded-full bg-sky-600/30 hover:bg-sky-600/45 text-sky-300 border border-sky-500/50 text-[11px] sm:text-xs font-bold transition" title="단축키: V">
+            3D뷰 / 탑뷰 (V)
+          </button>
+          <button id="btn-sound" class="w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 text-xs transition" title="효과음 켜기/끄기">
+            🔊
+          </button>
+          <button id="btn-reset-game" class="px-2 sm:px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 text-[11px] sm:text-xs font-semibold transition">
+            초기화
+          </button>
+          <button id="btn-surrender" class="hidden px-2 sm:px-3 py-1 rounded-full bg-rose-600/30 hover:bg-rose-600/45 text-rose-300 border border-rose-500/50 text-[11px] sm:text-xs font-bold transition">
+            항복
+          </button>
+          <button id="btn-exit-game" class="px-2 sm:px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-100 border border-white/15 text-[11px] sm:text-xs font-bold transition">
+            나가기
+          </button>
+        </div>
+      </header>
+
+      <!-- ONLINE / RANKED WAITING & TURN BANNER -->
+      <div id="online-status-bar" class="hidden mx-auto mt-1.5 sm:mt-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/60 text-[11px] sm:text-xs font-bold text-indigo-200 shadow-lg pointer-auto flex items-center gap-2">
+        <span id="online-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span id="online-status-text">상대방의 입장을 기다리는 중입니다...</span>
       </div>
 
-      <!-- Center: Dynamic Island Scoreboard & Live Shot Telemetry -->
-      <div class="pointer-auto flex items-center gap-1.5 sm:gap-3 bg-black/85 backdrop-blur-xl px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.75)]">
-        <!-- Player 1 (White Cue Ball) -->
-        <div id="p1-box" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-2 border-amber-400 bg-slate-800/90 transition-all">
-          <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-white to-slate-300 border border-slate-400 shadow shrink-0"></div>
-          <div class="leading-tight">
-            <div class="text-[9px] sm:text-[10px] text-slate-300 font-bold flex items-center gap-1">
-              <span id="p1-label">1P (흰공)</span>
-              <span id="p1-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+      <!-- CENTER TOAST AREA -->
+      <div id="toast-area" class="relative flex-1 w-full pointer-events-none"></div>
+
+      <!-- BOTTOM HUD (Floating Dynamic Island Pods - Fixed Width Spin Label, No Left Telemetry Box) -->
+      <footer class="w-full px-2 sm:px-5 pb-2 sm:pb-3 pt-1 flex flex-wrap items-end justify-center md:justify-end gap-1.5 sm:gap-3 pointer-events-none">
+        <!-- Bottom-Center Floating Island: Shot Power Gauge, Aim Lock & Fine Aim -->
+        <div class="pointer-auto w-full md:flex-1 min-w-0 md:min-w-[220px] max-w-md flex flex-col gap-1 sm:gap-1.5 bg-black/85 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl sm:rounded-3xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.75)]">
+          <div class="flex items-center justify-between gap-1">
+            <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+              <button id="btn-aim-left" class="px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] sm:text-xs font-bold text-slate-100 border border-white/15 transition" title="왼쪽 0.2° 미세조준 (◀)">◀ 0.2°</button>
+              <button id="btn-aim-right" class="px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] sm:text-xs font-bold text-slate-100 border border-white/15 transition" title="오른쪽 0.2° 미세조준 (▶)">0.2° ▶</button>
+              <button id="btn-lock-aim" class="px-2.5 sm:px-3 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] sm:text-xs font-bold text-slate-100 border border-white/15 transition" title="큐대 방향을 고정한 뒤 당겨서 샷 (단축키: L)">🔓 방향 고정 (L)</button>
             </div>
-            <div class="text-xs sm:text-base font-black text-white flex items-center">
-              <span><span id="p1-score">0</span><span class="text-[10px] sm:text-xs font-normal text-slate-400"> / <span class="target-score-txt">100</span></span></span>
-              <span id="p1-finish-badge" class="hidden ml-1 sm:ml-1.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-500/30 text-amber-200 border border-amber-400/60">3쿠션 0/1</span>
-            </div>
+            <span class="text-[11px] sm:text-xs font-bold text-slate-200 shrink-0">파워: <span id="power-txt" class="text-amber-400 font-black">0%</span></span>
+          </div>
+
+          <div id="power-track" class="w-full h-5 sm:h-4 bg-white/10 rounded-full p-0.5 border border-white/15 overflow-hidden cursor-pointer relative touch-none" title="클릭/드래그로 파워 조절 후 놓으면 발사">
+            <div id="power-fill" class="h-full rounded-full power-bar-grad transition-all duration-75" style="width: 0%;"></div>
+          </div>
+
+          <div class="flex justify-between items-center text-[10px] text-slate-300/90 gap-2">
+            <span id="rule-summary-bar" class="truncate">2적구 접촉 전 3쿠션 이상 선행 필수 (+1점)</span>
+            <span id="shot-mode-hint" class="text-amber-300 font-semibold shrink-0">방향 고정 후 당겨서 샷</span>
           </div>
         </div>
 
-        <!-- Cushion & Object Ball Hit Status -->
-        <div class="flex flex-col items-center px-1 sm:px-1.5 min-w-[78px] sm:min-w-[96px]">
-          <div class="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-sm font-black">
-            <span id="hud-cushions" class="text-cyan-400">쿠션: 0</span>
-            <span class="text-slate-600">|</span>
-            <span id="hud-run" class="text-amber-300 text-[11px] sm:text-xs">연속 0</span>
-          </div>
-          <div class="flex items-center gap-1 mt-0.5">
-            <span id="ind-hit1" class="px-1.5 sm:px-2 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/10 text-slate-400 border border-white/10">1적구</span>
-            <span id="ind-hit2" class="px-1.5 sm:px-2 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold bg-white/10 text-slate-400 border border-white/10">2적구</span>
-          </div>
-        </div>
-
-        <!-- Player 2 (Yellow Cue Ball) -->
-        <div id="p2-box" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-2 border-transparent opacity-65 transition-all">
-          <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 border border-amber-600 shadow shrink-0"></div>
-          <div class="leading-tight">
-            <div class="text-[9px] sm:text-[10px] text-slate-300 font-bold flex items-center gap-1">
-              <span id="p2-label">2P (노란공)</span>
-              <span id="p2-dot" class="hidden w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+        <!-- Bottom-Right Floating Island: Cue Elevation Angle & Fixed-Width Hit-Point Spin Selector -->
+        <div class="pointer-auto w-full md:w-auto flex items-center justify-between md:justify-start gap-2.5 sm:gap-3 bg-black/80 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl sm:rounded-3xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.72)] shrink-0">
+          <div class="flex flex-col justify-between w-32 sm:w-40 shrink-0">
+            <div class="flex items-center justify-between mb-0.5 sm:mb-1">
+              <span class="text-[11px] sm:text-xs font-bold text-slate-100">큐대 각도 (고각)</span>
+              <span id="elev-val-txt" class="text-[11px] sm:text-xs font-black text-sky-400">4°</span>
             </div>
-            <div class="text-xs sm:text-base font-black text-yellow-300 flex items-center">
-              <span><span id="p2-score">0</span><span class="text-[10px] sm:text-xs font-normal text-slate-400"> / <span class="target-score-txt">100</span></span></span>
-              <span id="p2-finish-badge" class="hidden ml-1 sm:ml-1.5 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-black bg-amber-500/30 text-amber-200 border border-amber-400/60">3쿠션 0/1</span>
+            <input id="elev-slider" type="range" min="0" max="75" value="4" step="1" class="cue-slider w-full my-0.5 sm:my-1" />
+            <div class="flex justify-between text-[9px] sm:text-[10px] text-slate-300 mt-0.5 gap-1">
+              <button type="button" data-elev="4" class="elev-preset px-1.5 sm:px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 transition">평타 4°</button>
+              <button type="button" data-elev="35" class="elev-preset px-1.5 sm:px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-amber-300 transition">점프 35°</button>
+              <button type="button" data-elev="65" class="elev-preset px-1.5 sm:px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-rose-300 transition">마세 65°</button>
             </div>
           </div>
+
+          <div class="w-[1px] h-14 sm:h-16 bg-white/15 shrink-0"></div>
+
+          <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div id="spin-pad" title="클릭/드래그하여 당점(상/하/좌/우) 조절">
+              <div class="absolute inset-[15%] rounded-full border border-dashed border-slate-400/70 pointer-events-none"></div>
+              <div class="absolute inset-x-2 top-1/2 h-[1px] bg-slate-400/50 pointer-events-none"></div>
+              <div class="absolute inset-y-2 left-1/2 w-[1px] bg-slate-400/50 pointer-events-none"></div>
+              <div id="spin-dot" style="left: 50%; top: 50%;"></div>
+            </div>
+
+            <div class="flex flex-col w-[124px] sm:w-[138px] shrink-0">
+              <span class="text-[11px] sm:text-xs font-bold text-slate-100">당점 조절</span>
+              <span id="spin-desc" class="text-[10px] sm:text-[11px] font-bold text-cyan-400 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">중단 (무회전)</span>
+              <button id="btn-spin-reset" class="mt-1 sm:mt-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-bold text-slate-200 border border-white/15 transition">
+                당점 초기화
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <!-- Right: Floating Pill - Aiming Guideline, Camera View, Sound & Reset -->
-      <div class="pointer-auto flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 bg-black/80 backdrop-blur-xl px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full border border-white/15 shadow-[0_10px_28px_rgba(0,0,0,0.65)]">
-        <button id="btn-toggle-guide" class="px-2 sm:px-3 py-1 rounded-full bg-emerald-600/30 hover:bg-emerald-600/45 text-emerald-300 border border-emerald-500/50 text-[11px] sm:text-xs font-extrabold transition" title="단축키: G">
-          조준선: ON (G)
-        </button>
-        <button id="btn-toggle-view" class="px-2 sm:px-3 py-1 rounded-full bg-sky-600/30 hover:bg-sky-600/45 text-sky-300 border border-sky-500/50 text-[11px] sm:text-xs font-bold transition" title="단축키: V">
-          3D뷰 / 탑뷰 (V)
-        </button>
-        <button id="btn-sound" class="w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 text-xs transition" title="효과음 켜기/끄기">
-          🔊
-        </button>
-        <button id="btn-reset-game" class="px-2 sm:px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 text-[11px] sm:text-xs font-semibold transition">
-          초기화
-        </button>
-        <button id="btn-surrender" class="hidden px-2 sm:px-3 py-1 rounded-full bg-rose-600/30 hover:bg-rose-600/45 text-rose-300 border border-rose-500/50 text-[11px] sm:text-xs font-bold transition">
-          항복
-        </button>
-        <button id="btn-exit-game" class="px-2 sm:px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-100 border border-white/15 text-[11px] sm:text-xs font-bold transition">
-          나가기
-        </button>
-      </div>
-    </header>
-
-    <!-- ONLINE WAITING / TURN BANNER -->
-    <div id="online-status-bar" class="hidden mx-auto mt-1.5 sm:mt-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/60 text-[11px] sm:text-xs font-bold text-indigo-200 shadow-lg pointer-auto flex items-center gap-2">
-      <span id="online-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-      <span id="online-status-text">상대방의 입장을 기다리는 중입니다...</span>
+      </footer>
     </div>
-
-    <!-- CENTER TOAST AREA -->
-    <div id="toast-area" class="relative flex-1 w-full pointer-events-none"></div>
-
-    <!-- BOTTOM HUD (Floating Dynamic Island Pods) -->
-    <footer class="w-full px-2 sm:px-5 pb-2 sm:pb-3 pt-1 flex flex-wrap items-end justify-between gap-1.5 sm:gap-3 pointer-events-none">
-      <!-- Bottom-Left Floating Island: Real-time Physics Telemetry & Controls -->
-      <div class="pointer-auto hidden md:flex flex-col gap-1.5 bg-black/80 backdrop-blur-xl px-4 py-2.5 rounded-3xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.72)] min-w-[230px]">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-slate-300">실시간 3D 강체 물리 상태</span>
-          <span id="tel-state" class="text-[11px] font-black text-slate-400">STOPPED 정지</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2 text-xs font-mono bg-white/5 px-2.5 py-1.5 rounded-2xl border border-white/10">
-          <div>
-            <span class="text-[10px] text-slate-400 block">선속도 (Speed)</span>
-            <span id="tel-speed" class="font-bold text-cyan-300">0.00 m/s</span>
-          </div>
-          <div>
-            <span class="text-[10px] text-slate-400 block">각속도 (Spin)</span>
-            <span id="tel-spin" class="font-bold text-amber-300">0 rad/s</span>
-          </div>
-        </div>
-        <div class="text-[10px] text-slate-300/90 leading-tight">
-          • <b>좌클릭 드래그:</b> 방향 조준 → <b>방향 고정</b> 후 당겨서 샷<br/>
-          • <b>우클릭/2손가락:</b> 시점 회전 | <b>◀▶:</b> 0.2° 조준 | <b>휠:</b> 줌
-        </div>
-      </div>
-
-      <!-- Bottom-Center Floating Island: Shot Power Gauge, Aim Lock & Fine Aim -->
-      <div class="pointer-auto w-full md:flex-1 min-w-0 md:min-w-[220px] max-w-md flex flex-col gap-1 sm:gap-1.5 bg-black/85 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl sm:rounded-3xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.75)]">
-        <div class="flex items-center justify-between gap-1">
-          <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-            <button id="btn-aim-left" class="px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] sm:text-xs font-bold text-slate-100 border border-white/15 transition" title="왼쪽 0.2° 미세조준 (◀)">◀ 0.2°</button>
-            <button id="btn-aim-right" class="px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] sm:text-xs font-bold text-slate-100 border border-white/15 transition" title="오른쪽 0.2° 미세조준 (▶)">0.2° ▶</button>
-            <button id="btn-lock-aim" class="px-2.5 sm:px-3 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[11px] sm:text-xs font-bold text-slate-100 border border-white/15 transition" title="큐대 방향을 고정한 뒤 당겨서 샷 (단축키: L)">🔓 방향 고정 (L)</button>
-          </div>
-          <span class="text-[11px] sm:text-xs font-bold text-slate-200 shrink-0">파워: <span id="power-txt" class="text-amber-400 font-black">0%</span></span>
-        </div>
-
-        <div id="power-track" class="w-full h-5 sm:h-4 bg-white/10 rounded-full p-0.5 border border-white/15 overflow-hidden cursor-pointer relative touch-none" title="클릭/드래그로 파워 조절 후 놓으면 발사">
-          <div id="power-fill" class="h-full rounded-full power-bar-grad transition-all duration-75" style="width: 0%;"></div>
-        </div>
-
-        <div class="flex justify-between items-center text-[10px] text-slate-300/90 gap-2">
-          <span id="rule-summary-bar" class="truncate">2적구 접촉 전 3쿠션 이상 선행 필수 (+10점)</span>
-          <span id="shot-mode-hint" class="text-amber-300 font-semibold shrink-0">방향 고정 후 당겨서 샷</span>
-        </div>
-      </div>
-
-      <!-- Bottom-Right Floating Island: Cue Elevation Angle & Hit-Point Spin Selector -->
-      <div class="pointer-auto w-full md:w-auto flex items-center justify-between md:justify-start gap-2.5 sm:gap-3 bg-black/80 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl sm:rounded-3xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.72)]">
-        <div class="flex flex-col justify-between w-32 sm:w-40">
-          <div class="flex items-center justify-between mb-0.5 sm:mb-1">
-            <span class="text-[11px] sm:text-xs font-bold text-slate-100">큐대 각도 (고각)</span>
-            <span id="elev-val-txt" class="text-[11px] sm:text-xs font-black text-sky-400">4°</span>
-          </div>
-          <input id="elev-slider" type="range" min="0" max="75" value="4" step="1" class="cue-slider w-full my-0.5 sm:my-1" />
-          <div class="flex justify-between text-[9px] sm:text-[10px] text-slate-300 mt-0.5 gap-1">
-            <button type="button" data-elev="4" class="elev-preset px-1.5 sm:px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 transition">평타 4°</button>
-            <button type="button" data-elev="35" class="elev-preset px-1.5 sm:px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-amber-300 transition">점프 35°</button>
-            <button type="button" data-elev="65" class="elev-preset px-1.5 sm:px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-rose-300 transition">마세 65°</button>
-          </div>
-        </div>
-
-        <div class="w-[1px] h-14 sm:h-16 bg-white/15 shrink-0"></div>
-
-        <div class="flex items-center gap-2 sm:gap-2.5">
-          <div id="spin-pad" title="클릭/드래그하여 당점(상/하/좌/우) 조절">
-            <div class="absolute inset-[15%] rounded-full border border-dashed border-slate-400/70 pointer-events-none"></div>
-            <div class="absolute inset-x-2 top-1/2 h-[1px] bg-slate-400/50 pointer-events-none"></div>
-            <div class="absolute inset-y-2 left-1/2 w-[1px] bg-slate-400/50 pointer-events-none"></div>
-            <div id="spin-dot" style="left: 50%; top: 50%;"></div>
-          </div>
-
-          <div class="flex flex-col min-w-[82px] sm:min-w-[96px]">
-            <span class="text-[11px] sm:text-xs font-bold text-slate-100">당점 조절</span>
-            <span id="spin-desc" class="text-[10px] sm:text-[11px] font-bold text-cyan-400 mt-0.5">중단 (무회전)</span>
-            <button id="btn-spin-reset" class="mt-1 sm:mt-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-bold text-slate-200 border border-white/15 transition">
-              당점 초기화
-            </button>
-          </div>
-        </div>
-      </div>
-    </footer>
-  </div>
-
   </div>
 
   <!-- START / SETTINGS PAGE (Full-Screen Edge-to-Edge Layout with Fixed Slot Positions) -->
   <div id="start-modal" class="fixed inset-0 z-50 w-full h-full h-dvh overflow-y-auto text-white"
        style="background: radial-gradient(circle at 50% 25%, #132b52 0%, #09152b 58%, #040812 100%); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);">
     <div class="min-h-full w-full max-w-6xl mx-auto px-4 sm:px-8 lg:px-14 py-4 sm:py-8 flex flex-col justify-between gap-4 sm:gap-5">
-      <!-- Top Title & Custom Crossed-Cue + 3-Ball Logo -->
-      <header class="flex items-center justify-between pt-1">
+      <!-- Top Title, Custom Crossed-Cue + 3-Ball Logo & Ranking Table Button -->
+      <header class="flex items-center justify-between gap-3 pt-1">
         <div class="flex items-center gap-4 sm:gap-5">
           <!-- Custom Logo: Crossed Cue Sticks with White (Top), Yellow (Left), Red (Right) -->
           <div class="w-14 h-14 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center drop-shadow-[0_6px_16px_rgba(0,0,0,0.65)]">
@@ -429,12 +406,19 @@
             </p>
           </div>
         </div>
-        <button id="btn-close-modal" class="hidden text-slate-300 hover:text-white text-2xl font-bold px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 transition">✕</button>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button id="btn-open-ranking" type="button" class="px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border-2 border-amber-400/70 font-black text-xs sm:text-base shadow-lg shadow-amber-950/40 transition flex items-center gap-1.5 sm:gap-2">
+            <span>🏆</span>
+            <span>랭킹표</span>
+          </button>
+          <button id="btn-close-modal" class="hidden text-slate-300 hover:text-white text-2xl font-bold px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 transition">✕</button>
+        </div>
       </header>
 
       <!-- Main Full-Screen Settings Grid -->
       <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start my-auto">
-        <!-- Left Column: Mode & Multiplayer Setup (Fixed Heights so Buttons Never Shift) -->
+        <!-- Left Column: Mode & Multiplayer/Ranked Setup -->
         <div class="lg:col-span-7 flex flex-col gap-5">
           <!-- 1. Game Mode -->
           <div>
@@ -443,7 +427,7 @@
               <button type="button" data-mode="3ball" class="mode-btn p-3.5 sm:p-4 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-left transition min-h-[92px] sm:h-[106px] flex flex-col justify-center">
                 <div class="font-black text-base sm:text-lg text-white">3구 (쓰리쿠션)</div>
                 <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
-                  흰공·노란공·빨간공 3개 사용. 2적구 접촉 전 <b>3쿠션 이상</b> 선행 시 <b>+10점</b>.
+                  흰공·노란공·빨간공 3개 사용. 2적구 접촉 전 <b>3쿠션 이상</b> 선행 시 <b>+1점</b>.
                 </p>
               </button>
 
@@ -456,28 +440,33 @@
             </div>
           </div>
 
-          <!-- 2. Play Mode -->
+          <!-- 2. Play Mode (1P, 2P Local, Online Friend Room, Ranked Match) -->
           <div>
             <label class="block text-xs sm:text-sm font-bold text-sky-200/85 uppercase tracking-wider mb-2.5">2. 플레이 모드</label>
-            <div class="grid grid-cols-3 gap-2 sm:gap-3">
-              <button type="button" data-players="1p" class="player-btn p-2.5 sm:p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+              <button type="button" data-players="1p" class="player-btn p-2.5 sm:p-3 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center">
                 <div class="font-bold text-xs sm:text-sm text-white">🎯 1인 연습</div>
-                <div class="text-[10px] sm:text-[11px] text-slate-300 mt-1">혼자서 기술 연습</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-300 mt-1">혼자서 연습</div>
               </button>
-              <button type="button" data-players="2p" class="player-btn p-2.5 sm:p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center">
-                <div class="font-bold text-xs sm:text-sm text-white">⚔️ 2인 로컬 대전</div>
-                <div class="text-[10px] sm:text-[11px] text-slate-300 mt-1">한 기기 교대 대전</div>
+              <button type="button" data-players="2p" class="player-btn p-2.5 sm:p-3 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center">
+                <div class="font-bold text-xs sm:text-sm text-white">⚔️ 2인 로컬</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-300 mt-1">한 기기 대전</div>
               </button>
-              <button type="button" data-players="online" class="player-btn p-2.5 sm:p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center">
-                <div class="font-bold text-xs sm:text-sm text-indigo-300">🌐 온라인 멀티플레이</div>
-                <div class="text-[10px] sm:text-[11px] text-slate-300 mt-1">방 코드 실시간 대전</div>
+              <button type="button" data-players="online" class="player-btn p-2.5 sm:p-3 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center">
+                <div class="font-bold text-xs sm:text-sm text-indigo-300">🌐 온라인</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-300 mt-1">방 코드 대전</div>
+              </button>
+              <button type="button" data-players="ranked" class="player-btn p-2.5 sm:p-3 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center">
+                <div class="font-bold text-xs sm:text-sm text-amber-300">🏆 랭크전</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-300 mt-1">랜덤 매칭</div>
               </button>
             </div>
           </div>
 
-          <!-- Reserved Fixed-Height Online Multiplayer Lobby Slot (Prevents Layout Shift) -->
-          <div id="online-lobby-slot" class="hidden lg:block lg:h-[188px]">
-            <div id="online-lobby-box" class="invisible opacity-0 pointer-events-none h-full p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/40 flex flex-col justify-between transition-opacity duration-150">
+          <!-- Reserved Fixed-Height Online / Ranked Lobby Slot (Prevents Layout Shift) -->
+          <div id="online-lobby-slot" class="hidden lg:block lg:h-[214px]">
+            <!-- A. Online Friend Room Lobby -->
+            <div id="online-lobby-box" class="hidden h-full p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/40 flex flex-col justify-between">
               <div class="flex items-center justify-between">
                 <span class="text-xs sm:text-sm font-black text-indigo-300">🌐 온라인 멀티플레이 로비</span>
               </div>
@@ -491,7 +480,7 @@
                 </button>
               </div>
 
-              <div class="h-[78px] flex flex-col justify-center">
+              <div class="h-[88px] flex flex-col justify-center">
                 <div id="online-host-info" class="text-xs text-slate-300 bg-slate-900/75 p-3 rounded-lg border border-slate-800 leading-relaxed">
                   5자리 방 코드가 발급됩니다. 상대방이 입장하기 전까지 당구대에서 <b>큐대·조준선으로 자유 연습</b>을 할 수 있으며, 상대방 입장 시 자동으로 초구 배치와 본 경기가 시작됩니다.
                 </div>
@@ -502,14 +491,59 @@
                 </div>
               </div>
             </div>
+
+            <!-- B. Ranked Match ID/Password Login & Random Matchmaking Lobby -->
+            <div id="ranked-lobby-box" class="hidden h-full p-4 rounded-xl bg-amber-950/35 border border-amber-500/45 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs sm:text-sm font-black text-amber-300">🏆 랭크전 (비슷한 점수대 실시간 랜덤 매칭)</span>
+                <span id="ranked-auth-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-600">로그인 필요</span>
+              </div>
+
+              <!-- Logged-Out View: ID & Password Login / Register -->
+              <div id="ranked-auth-view" class="flex flex-col gap-2.5 my-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input id="ranked-auth-id" type="text" maxlength="16" placeholder="아이디 입력 (영문/숫자/한글 2~16자)" class="w-full bg-slate-900/90 border border-slate-600 rounded-lg px-3 py-2 text-xs sm:text-sm text-white font-bold focus:outline-none focus:border-amber-400" />
+                  <input id="ranked-auth-pw" type="password" maxlength="24" placeholder="비밀번호 입력 (4자 이상)" class="w-full bg-slate-900/90 border border-slate-600 rounded-lg px-3 py-2 text-xs sm:text-sm text-white font-bold focus:outline-none focus:border-amber-400" />
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                  <button type="button" id="btn-ranked-login" class="py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm transition">
+                    🔑 랭크 계정 로그인
+                  </button>
+                  <button type="button" id="btn-ranked-register" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-200 font-bold text-xs sm:text-sm border border-amber-500/40 transition">
+                    ✨ 새 아이디 회원가입
+                  </button>
+                </div>
+                <p id="ranked-auth-msg" class="text-[11px] text-slate-300">초기 레이팅 1,000 RP로 시작하며 3구·4구 점수가 각각 기록됩니다.</p>
+              </div>
+
+              <!-- Logged-In View: Account Info & Matchmaking Status -->
+              <div id="ranked-ready-view" class="hidden flex flex-col gap-2.5 my-auto">
+                <div class="flex items-center justify-between bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-700">
+                  <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                    <span class="font-black text-white">👤 <span id="ranked-user-id">-</span></span>
+                    <span class="text-slate-500">|</span>
+                    <span id="ranked-user-rp" class="font-bold text-amber-300">3구 1000 RP · 4구 1000 RP</span>
+                  </div>
+                  <button type="button" id="btn-ranked-logout" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-300 border border-slate-600 transition">
+                    로그아웃
+                  </button>
+                </div>
+                <div class="flex items-center justify-between gap-2 bg-slate-900/70 px-3 py-2.5 rounded-lg border border-amber-500/30">
+                  <span id="ranked-match-status" class="text-xs text-slate-200 font-semibold">하단 버튼을 누르면 비슷한 점수대 상대를 자동으로 찾습니다.</span>
+                  <button type="button" id="btn-ranked-cancel" class="hidden shrink-0 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-black transition">
+                    매칭 취소
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Right Column: Target Score, Fixed-Height 4-Ball Options & Controls Guide -->
         <div class="lg:col-span-5 flex flex-col gap-5">
-          <!-- 3. Target Score (Always Reserved Height) -->
+          <!-- 3. Target Score (3구: 30/40/50점, 4구: 100/300/500/1000점) -->
           <div id="match-options-row" class="transition-opacity duration-150">
-            <label class="block text-xs sm:text-sm font-bold text-sky-200/85 uppercase tracking-wider mb-2.5">3. 목표 점수 (10~1000점)</label>
+            <label class="block text-xs sm:text-sm font-bold text-sky-200/85 uppercase tracking-wider mb-2.5">3. 목표 점수 선택</label>
             <select id="sel-target-score" class="w-full bg-slate-900/85 border border-slate-600 rounded-xl px-4 py-3 text-sm sm:text-base text-white font-bold focus:outline-none focus:border-blue-500"></select>
           </div>
 
@@ -582,22 +616,86 @@
     </div>
   </div>
 
+  <!-- RANKING TABLE PAGE (Dedicated Full-Screen Leaderboard View like Game Page) -->
+  <div id="ranking-page" class="hidden fixed inset-0 z-50 w-full h-full h-dvh overflow-y-auto text-white"
+       style="background: radial-gradient(circle at 50% 20%, #172a4f 0%, #091326 60%, #040812 100%); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);">
+    <div class="min-h-full w-full max-w-5xl mx-auto px-4 sm:px-8 py-5 sm:py-8 flex flex-col gap-5">
+      <!-- Top Bar -->
+      <header class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-2xl sm:text-3xl shadow">
+            🏆
+          </div>
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">실시간 랭킹표</h2>
+            <p class="text-xs sm:text-sm text-sky-300/80">랭크전 전적 및 레이팅(RP) 순위</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-refresh-ranking" type="button" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-100 border border-white/15 font-bold text-xs sm:text-sm transition">
+            🔄 새로고침
+          </button>
+          <button id="btn-close-ranking" type="button" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs sm:text-sm shadow-lg transition">
+            ← 돌아가기
+          </button>
+        </div>
+      </header>
+
+      <!-- Mode Tabs & My Rank Summary -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-700/80">
+        <div class="flex items-center gap-2">
+          <button id="tab-rank-3ball" type="button" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-black text-xs sm:text-sm border border-blue-400 transition">
+            3구 (쓰리쿠션) 랭킹
+          </button>
+          <button id="tab-rank-4ball" type="button" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs sm:text-sm border border-slate-700 transition">
+            4구 (사구) 랭킹
+          </button>
+        </div>
+        <div id="ranking-my-summary" class="text-xs sm:text-sm font-bold text-amber-300 px-2">
+          랭크전 로그인 시 내 순위가 표시됩니다.
+        </div>
+      </div>
+
+      <!-- Leaderboard Table -->
+      <div class="flex-1 bg-slate-950/75 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900/95 border-b border-slate-800 text-xs sm:text-sm text-sky-300 uppercase">
+                <th class="py-3.5 px-4 sm:px-6 font-black w-20 sm:w-24 text-center">순위</th>
+                <th class="py-3.5 px-4 sm:px-6 font-black">아이디</th>
+                <th class="py-3.5 px-4 sm:px-6 font-black text-right">랭킹 점수</th>
+                <th class="py-3.5 px-4 sm:px-6 font-black text-right">전적 (승/패)</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-tbody" class="divide-y divide-slate-800/80 text-xs sm:text-sm">
+              <tr>
+                <td colspan="4" class="py-12 text-center text-slate-400">랭킹 데이터를 불러오는 중입니다...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- GAME OVER MODAL -->
   <div id="gameover-modal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border-2 border-amber-500/60 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl">
       <div class="text-5xl mb-2">🏆</div>
       <h2 id="go-title" class="text-2xl font-black text-white mb-1">1P 승리!</h2>
-      <p id="go-subtitle" class="text-sm text-slate-300 mb-5">목표 점수를 달성했습니다.</p>
+      <p id="go-subtitle" class="text-sm text-slate-300 mb-3">목표 점수를 달성했습니다.</p>
+      <div id="go-ranked-delta" class="hidden mb-4 px-3.5 py-2 rounded-xl bg-amber-500/15 border border-amber-400/50 text-sm font-black text-amber-300"></div>
 
       <div class="bg-slate-950 rounded-xl p-4 mb-5 border border-slate-800 flex justify-around">
         <div>
           <div class="text-xs text-slate-400">1P (흰공)</div>
-          <div id="go-p1" class="text-xl font-black text-white mt-0.5">100점</div>
+          <div id="go-p1" class="text-xl font-black text-white mt-0.5">30점</div>
         </div>
         <div class="w-[1px] bg-slate-800"></div>
         <div>
           <div class="text-xs text-slate-400">2P (노란공)</div>
-          <div id="go-p2" class="text-xl font-black text-yellow-400 mt-0.5">40점</div>
+          <div id="go-p2" class="text-xl font-black text-yellow-400 mt-0.5">12점</div>
         </div>
       </div>
 
@@ -836,22 +934,22 @@
      */
     const TABLE_SPECS = {
       '3ball': {
-        TABLE_L: 2.844,       // 2,844mm (포인트 간격 355.5mm)
-        TABLE_W: 1.422,       // 1,422mm (포인트 간격 355.5mm)
+        TABLE_L: 2.844,
+        TABLE_W: 1.422,
         HALF_L: 1.422,
         HALF_W: 0.711,
-        CUSHION_H: 0.0375,    // 쿠션 높이 약 37~38mm
-        R: 0.03075,           // 당구공 지름 61.5mm
-        BALL_MASS: 0.210      // 3구 공 질량 (kg)
+        CUSHION_H: 0.0375,
+        R: 0.03075,
+        BALL_MASS: 0.210
       },
       '4ball': {
-        TABLE_L: 2.448,       // 2,448mm (포인트 간격 306mm)
-        TABLE_W: 1.224,       // 1,224mm (포인트 간격 306mm)
+        TABLE_L: 2.448,
+        TABLE_W: 1.224,
         HALF_L: 1.224,
         HALF_W: 0.612,
-        CUSHION_H: 0.040,     // 쿠션 높이 약 40mm
-        R: 0.03275,           // 당구공 지름 65.5mm
-        BALL_MASS: 0.254      // 4구 공 질량 (kg)
+        CUSHION_H: 0.040,
+        R: 0.03275,
+        BALL_MASS: 0.254
       }
     };
 
@@ -863,9 +961,9 @@
       CUSHION_H: 0.0375,
       R: 0.03075,
       BALL_MASS: 0.210,
-      CUE_LENGTH: 1.420,      // 큐 전체 길이 1,420mm (상대 69cm + 하대 72cm + 팁/선골 1cm)
-      CUE_MASS: 0.500,        // 큐 무게 500g (0.500kg)
-      CUE_TIP_R: 0.00575,     // 큐 팁 지름 11.5mm (반지름 5.75mm)
+      CUE_LENGTH: 1.420,
+      CUE_MASS: 0.500,
+      CUE_TIP_R: 0.00575,
       CUE_TIP_E: 0.74,
       MAX_CUE_SPEED: 7.20,
       G: 9.80665,
@@ -885,18 +983,18 @@
 
     /**
      * =========================================================================
-     * 3. GAME STATE
+     * 3. GAME STATE & RANKED STATE
      * =========================================================================
      */
     const gameState = {
       mode: '3ball',            // '3ball' | '4ball'
-      players: '1p',            // '1p' | '2p' | 'online'
-      targetScore: 100,
+      players: '1p',            // '1p' | '2p' | 'online' | 'ranked'
+      targetScore: 30,
       threeCushionFinish: false,
-      finishTargetCount: 1,     // 1 | 2 | 3 (4구 마무리 3쿠션 성공 필요 횟수)
+      finishTargetCount: 1,
       finishWins: { 1: 0, 2: 0 },
-      minusEnabled: true,       // 4구 빡(마이너스 점수) 허용 여부
-      backMinusEnabled: false,  // 4구 뒷 빡(0점 이하 감점) 허용 여부
+      minusEnabled: true,
+      backMinusEnabled: false,
       started: false,
       gameOver: false,
       isTransitioning: false,
@@ -905,7 +1003,7 @@
         active: false,
         roomCode: '',
         roomRef: null,
-        myRole: 1,              // 1 (Host / White) or 2 (Guest / Yellow)
+        myRole: 1,
         guestJoined: false,
         lastShotId: 0,
         lastSyncId: 0,
@@ -913,7 +1011,19 @@
         lastCompletedRematchId: 0
       },
 
-      currentPlayer: 1,         // 1 (White) or 2 (Yellow)
+      ranked: {
+        user: null,             // { userId, safeKey, rp3, rp4, wins3, losses3, wins4, losses4 }
+        searching: false,
+        queueRef: null,
+        searchTimer: null,
+        searchStartTime: 0,
+        p1Info: null,
+        p2Info: null,
+        settled: false,
+        tabMode: '3ball'
+      },
+
+      currentPlayer: 1,
       inning: 1,
       scores: { 1: 0, 2: 0 },
       currentRun: 0,
@@ -940,6 +1050,10 @@
       }
     };
 
+    function isNetworkMatch() {
+      return gameState.players === 'online' || gameState.players === 'ranked';
+    }
+
     function isWaitingPracticeMode() {
       return gameState.players === 'online' && !gameState.online.guestJoined;
     }
@@ -953,7 +1067,7 @@
       const ballChoiceModal = document.getElementById('ball-choice-modal');
       if (ballChoiceModal && !ballChoiceModal.classList.contains('hidden')) return false;
       if (!gameState.started || gameState.isMoving || gameState.gameOver) return false;
-      if (gameState.players === 'online') {
+      if (isNetworkMatch()) {
         if (!gameState.online.guestJoined) return true;
         return gameState.currentPlayer === gameState.online.myRole;
       }
@@ -1001,7 +1115,7 @@
 
     /**
      * =========================================================================
-     * 4. THREE.JS 3D SCENE, DEEP NAVY TABLE & LIGHTING
+     * 4. THREE.JS 3D SCENE, DEEPER NAVY CLOTH & LIGHTING
      * =========================================================================
      */
     const container = document.getElementById('canvas-container');
@@ -1233,12 +1347,13 @@
       const clothTex = createBilliardClothTextures();
       const woodTex = createWoodRailTextures();
 
+      // 진한 다크 네이비 라사지 색상 적용
       const bedGeo = new THREE.BoxGeometry(PHYS.TABLE_L, 0.08, PHYS.TABLE_W);
       const bedMat = new THREE.MeshStandardMaterial({
-        color: 0x1656ad,
+        color: 0x0c326b,
         bumpMap: clothTex.bumpMap,
         bumpScale: 0.0006,
-        roughness: 0.86,
+        roughness: 0.88,
         metalness: 0.0
       });
       const bedMesh = new THREE.Mesh(bedGeo, bedMat);
@@ -1249,10 +1364,10 @@
       const cushionH = PHYS.CUSHION_H;
       const cushionThick = 0.045;
       const cushionMat = new THREE.MeshStandardMaterial({
-        color: 0x1551a3,
+        color: 0x0a2b5e,
         bumpMap: clothTex.bumpMap,
         bumpScale: 0.0006,
-        roughness: 0.86,
+        roughness: 0.88,
         metalness: 0.0
       });
 
@@ -1282,10 +1397,9 @@
       eastCush.receiveShadow = true;
       tableGroup.add(eastCush);
 
-      // Subtle inner cushion nose trim bevel for realistic light catch
       const noseTrimMat = new THREE.MeshStandardMaterial({
-        color: 0x114287,
-        roughness: 0.78,
+        color: 0x071f47,
+        roughness: 0.80,
         metalness: 0.02
       });
       const longNoseGeo = new THREE.BoxGeometry(PHYS.TABLE_L, 0.005, 0.006);
@@ -1340,7 +1454,6 @@
       eRail.receiveShadow = true;
       tableGroup.add(eRail);
 
-      // Realistic brushed metallic corner castings
       const cornerMat = new THREE.MeshStandardMaterial({
         color: 0x262930,
         roughness: 0.28,
@@ -1366,7 +1479,6 @@
       cabinet.position.y = -0.15;
       tableGroup.add(cabinet);
 
-      // 프레임 포인트: 장쿠션 8등분, 단쿠션 4등분 (3구: 355.5mm 간격, 4구: 306mm 간격)
       const diamondGeo = new THREE.BoxGeometry(0.014, 0.003, 0.014);
       const diamondMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.22, metalness: 0.35 });
 
@@ -1915,7 +2027,7 @@
       updatePowerGauge(0);
       setAimLocked(false, true);
 
-      if (gameState.players === 'online' && gameState.online.guestJoined && gameState.online.roomRef) {
+      if (isNetworkMatch() && gameState.online.guestJoined && gameState.online.roomRef) {
         gameState.online.lastShotId = shotPayload.shotId;
         updateOnlineBanner();
         gameState.online.roomRef.update({ lastShot: shotPayload });
@@ -1982,8 +2094,6 @@
               const nextWx = b.wx + angAccel * uHatZ * h;
               const nextWz = b.wz - angAccel * uHatX * h;
 
-              // Side spin (wy) does NOT curve a level shot before cushion contact;
-              // lateral swerve occurs only when cue elevation tilts the spin axis (massé).
               const swerveFactor = PHYS.SWERVE_FACTOR * (b.swerveGain || 0);
               const swerveAx = -swerveFactor * b.wy * uz;
               const swerveAz = swerveFactor * b.wy * ux;
@@ -2099,7 +2209,6 @@
       const vnAfter = -PHYS.E_CUSHION * vn;
       const jn = vnAfter - vn;
 
-      // Side spin (wy) grips the rubber cushion nose upon impact and converts into lateral rebound velocity
       const vSlipT = vt - R * b.wy;
       const maxJt = PHYS.MU_CUSHION * jn;
       const jt = Math.max(-maxJt, Math.min(maxJt, -(2 / 5) * vSlipT));
@@ -2209,7 +2318,7 @@
 
     /**
      * =========================================================================
-     * 7. CAROM RULES (+10 / -10 / 4-BALL FINISH) & FIREBASE ONLINE SYNC
+     * 7. CAROM RULES (3-BALL +1 PT / 4-BALL +10 PT) & ONLINE / RANKED SYNC
      * =========================================================================
      */
     function detachOnlineRoom() {
@@ -2289,7 +2398,11 @@
             data.playerLeft.leftId !== gameState.online.lastLeftId &&
             data.playerLeft.leaverRole !== gameState.online.myRole) {
           gameState.online.lastLeftId = data.playerLeft.leftId;
-          handleOpponentLeftOnlineRoom(code);
+          if (gameState.players === 'ranked') {
+            handleOpponentLeftRankedRoom();
+          } else {
+            handleOpponentLeftOnlineRoom(code);
+          }
           return;
         }
 
@@ -2325,22 +2438,28 @@
           if (sync.toastText) {
             showToast(sync.toastText, sync.toastTone || 'slate', sync.toastDuration || 2400);
           }
-          if (gameState.gameOver && sync.winner && gameState.players !== 'online') {
-            showGameOverModal(sync.winner);
+          if (gameState.gameOver && sync.winner) {
+            if (gameState.players === 'ranked') {
+              finishRankedMatchUI(sync.winner);
+            } else if (gameState.players !== 'online') {
+              showGameOverModal(sync.winner);
+            }
           }
         }
 
-        if (data.rematch) {
-          syncOnlineRematchState(data.rematch);
-        } else {
-          document.getElementById('rematch-modal').classList.add('hidden');
-          document.getElementById('ball-choice-modal').classList.add('hidden');
+        if (gameState.players === 'online') {
+          if (data.rematch) {
+            syncOnlineRematchState(data.rematch);
+          } else {
+            document.getElementById('rematch-modal').classList.add('hidden');
+            document.getElementById('ball-choice-modal').classList.add('hidden');
+          }
         }
       });
     }
 
     function publishOnlineStateSync(toastText, toastTone, toastDuration = 2400) {
-      if (gameState.players !== 'online' || !gameState.online.guestJoined || !gameState.online.roomRef) return;
+      if (!isNetworkMatch() || !gameState.online.guestJoined || !gameState.online.roomRef) return;
       const syncId = Date.now() + Math.floor(Math.random() * 10000);
       gameState.online.lastSyncId = syncId;
 
@@ -2365,7 +2484,10 @@
 
     function handleWinVictory(p) {
       gameState.gameOver = true;
-      if (gameState.players === 'online') {
+      if (gameState.players === 'ranked') {
+        settleRankedMatch(p);
+        finishRankedMatchUI(p);
+      } else if (gameState.players === 'online') {
         startOnlineRematchPrompt(
           'gameover',
           `${p === 1 ? '1P (흰공)' : '2P (노란공)'} 승리! (${gameState.scores[1]} : ${gameState.scores[2]})`,
@@ -2390,7 +2512,7 @@
         return;
       }
 
-      if (gameState.players === 'online' && gameState.currentPlayer !== gameState.online.myRole) {
+      if (isNetworkMatch() && gameState.currentPlayer !== gameState.online.myRole) {
         return;
       }
 
@@ -2404,14 +2526,15 @@
       let wonNow = false;
 
       if (gameState.mode === '3ball') {
+        // 3구 규칙: 1점씩 득점
         const hitTwo = log.hitBalls.size >= 2;
         const threeCushions = log.cushionsBeforeSecondObj >= 3;
 
         if (hitTwo && threeCushions) {
-          gameState.scores[p] += 10;
+          gameState.scores[p] += 1;
           gameState.currentRun += 1;
           scored = true;
-          toastMsg = '쓰리쿠션 득점! (+10점)';
+          toastMsg = '쓰리쿠션 득점! (+1점)';
           toastTone = 'emerald';
           sound.playScoreChime();
           if (gameState.scores[p] >= gameState.targetScore) {
@@ -2425,7 +2548,7 @@
           toastTone = 'slate';
         }
       } else {
-        // 4구 (사구) 규칙
+        // 4구 (사구) 규칙: 10점씩 득점
         const hitRed1 = log.hitBalls.has('red1');
         const hitRed2 = log.hitBalls.has('red2');
         const hitNoRed = !hitRed1 && !hitRed2;
@@ -2456,8 +2579,6 @@
           toastTone = 'rose';
           sound.playFoulBuzz();
         } else if (isFinishAttempt) {
-          // 본인의 점수를 모두 채운 뒤 게임을 끝내기 위해 치는 마지막 3쿠션:
-          // 쿠션을 3번 이상 먼저 맞힌 뒤 빨간 공(적구) 두 개를 모두 맞히면 3쿠션 1회 성공
           if (hitRed1 && hitRed2 && log.cushionsBeforeFirstObj >= 3) {
             gameState.finishWins[p] = (gameState.finishWins[p] || 0) + 1;
             gameState.currentRun += 1;
@@ -2538,11 +2659,11 @@
       publishOnlineStateSync(toastMsg, toastTone);
     }
 
-    function showGameOverModal(winnerRole) {
+    function showGameOverModal(winnerRole, customSubtext = null) {
       let title = '';
       if (gameState.players === '1p') {
         title = '1P 연습 목표 달성!';
-      } else if (gameState.players === 'online') {
+      } else if (isNetworkMatch()) {
         title = winnerRole === gameState.online.myRole
           ? `🎉 승리! (${winnerRole === 1 ? '1P 흰공' : '2P 노란공'})`
           : `패배 (${winnerRole === 1 ? '1P 흰공' : '2P 노란공'} 승리)`;
@@ -2551,10 +2672,21 @@
       }
 
       document.getElementById('go-title').textContent = title;
-      document.getElementById('go-subtitle').textContent =
+      document.getElementById('go-subtitle').textContent = customSubtext ||
         `${gameState.mode === '3ball' ? '3구(쓰리쿠션)' : '4구'} ${gameState.targetScore}점 경기를 제패했습니다!`;
       document.getElementById('go-p1').textContent = `${gameState.scores[1]}점`;
       document.getElementById('go-p2').textContent = `${gameState.scores[2]}점`;
+
+      const rematchBtn = document.getElementById('btn-rematch');
+      const deltaBox = document.getElementById('go-ranked-delta');
+      if (gameState.players === 'ranked') {
+        rematchBtn.classList.add('hidden');
+        deltaBox.classList.remove('hidden');
+      } else {
+        rematchBtn.classList.remove('hidden');
+        deltaBox.classList.add('hidden');
+      }
+
       document.getElementById('gameover-modal').classList.remove('hidden');
     }
 
@@ -2562,7 +2694,7 @@
       gameState.currentRun = 0;
       document.getElementById('hud-run').textContent = '연속 0';
 
-      if (gameState.players === '2p' || gameState.players === 'online') {
+      if (gameState.players === '2p' || isNetworkMatch()) {
         if (gameState.currentPlayer === 2) gameState.inning += 1;
         gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
       } else {
@@ -2631,13 +2763,13 @@
       const dot = document.getElementById('online-status-dot');
       const txt = document.getElementById('online-status-text');
 
-      if (gameState.players !== 'online' || !gameState.started) {
+      if (!isNetworkMatch() || !gameState.started) {
         bar.classList.add('hidden');
         return;
       }
 
       bar.classList.remove('hidden');
-      if (!gameState.online.guestJoined) {
+      if (gameState.players === 'online' && !gameState.online.guestJoined) {
         dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
         txt.textContent = `방 코드 [${gameState.online.roomCode}] 대기 중 · 자유 연습 가능 (상대 입장 시 본 경기 시작)`;
       } else if (gameState.isMoving) {
@@ -2653,15 +2785,18 @@
     }
 
     function updateTelemetryHUD() {
+      const stEl = document.getElementById('tel-state');
+      if (!stEl) return;
       const cue = getCueBall();
       if (!cue) return;
       const speed = Math.hypot(cue.vx, cue.vy, cue.vz);
       const omega = Math.hypot(cue.wx, cue.wy, cue.wz);
 
-      document.getElementById('tel-speed').textContent = `${speed.toFixed(2)} m/s`;
-      document.getElementById('tel-spin').textContent = `${Math.round(omega)} rad/s`;
+      const spEl = document.getElementById('tel-speed');
+      const omEl = document.getElementById('tel-spin');
+      if (spEl) spEl.textContent = `${speed.toFixed(2)} m/s`;
+      if (omEl) omEl.textContent = `${Math.round(omega)} rad/s`;
 
-      const stEl = document.getElementById('tel-state');
       if (cue.state === 'AIRBORNE') {
         stEl.textContent = 'AIRBORNE 점프';
         stEl.className = 'text-[11px] font-black text-rose-400';
@@ -2701,7 +2836,578 @@
 
     /**
      * =========================================================================
-     * 8. FIREBASE ONLINE ROOM CREATION & JOINING
+     * 8. RANKED ACCOUNT (ID/PW), SIMILAR-RP MATCHMAKING & LEADERBOARD
+     * =========================================================================
+     */
+    const RANKED_SESSION_KEY = 'billiards_master_ranked_user_v1';
+
+    function sanitizeFirebaseKey(rawId) {
+      return encodeURIComponent(rawId.trim().toLowerCase()).replace(/\./g, '%2E');
+    }
+
+    async function hashPassword(pw) {
+      try {
+        if (window.crypto && window.crypto.subtle) {
+          const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode('bm_salt_' + pw));
+          return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+      } catch (_) {}
+      let h = 2166136261;
+      const str = 'bm_salt_' + pw;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return 'fb_' + (h >>> 0).toString(16);
+    }
+
+    function updateRankedAccountUI() {
+      const u = gameState.ranked.user;
+      const badge = document.getElementById('ranked-auth-badge');
+      const authView = document.getElementById('ranked-auth-view');
+      const readyView = document.getElementById('ranked-ready-view');
+
+      if (u) {
+        badge.textContent = '로그인 완료';
+        badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-600/30 text-emerald-300 border border-emerald-500/50';
+        authView.classList.add('hidden');
+        readyView.classList.remove('hidden');
+        document.getElementById('ranked-user-id').textContent = u.userId;
+        document.getElementById('ranked-user-rp').textContent = `3구 ${u.rp3} RP · 4구 ${u.rp4} RP`;
+      } else {
+        badge.textContent = '로그인 필요';
+        badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-600';
+        authView.classList.remove('hidden');
+        readyView.classList.add('hidden');
+      }
+      refreshStartButtonLabel();
+    }
+
+    async function refreshLoggedInUserFromDB() {
+      const u = gameState.ranked.user;
+      if (!u || !rtdb) return;
+      try {
+        const snap = await rtdb.ref(`rankedUsers/${u.safeKey}`).get();
+        if (snap.exists()) {
+          const val = snap.val();
+          gameState.ranked.user = {
+            userId: val.userId,
+            safeKey: u.safeKey,
+            rp3: val.rp3 ?? 1000,
+            rp4: val.rp4 ?? 1000,
+            wins3: val.wins3 ?? 0,
+            losses3: val.losses3 ?? 0,
+            wins4: val.wins4 ?? 0,
+            losses4: val.losses4 ?? 0
+          };
+          localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
+          updateRankedAccountUI();
+        }
+      } catch (_) {}
+    }
+
+    async function handleRankedRegister() {
+      if (!rtdb) {
+        showToast('Firebase 데이터베이스 연결을 확인해 주세요.', 'rose');
+        return;
+      }
+      const rawId = document.getElementById('ranked-auth-id').value.trim();
+      const rawPw = document.getElementById('ranked-auth-pw').value;
+      const msgEl = document.getElementById('ranked-auth-msg');
+
+      if (rawId.length < 2 || rawId.length > 16) {
+        msgEl.textContent = '⚠️ 아이디는 2자 이상 16자 이하로 입력해 주세요.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
+        return;
+      }
+      if (rawPw.length < 4) {
+        msgEl.textContent = '⚠️ 비밀번호는 4자 이상으로 입력해 주세요.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
+        return;
+      }
+
+      const safeKey = sanitizeFirebaseKey(rawId);
+      const userRef = rtdb.ref(`rankedUsers/${safeKey}`);
+      const snap = await userRef.get();
+      if (snap.exists()) {
+        msgEl.textContent = '⚠️ 이미 사용 중인 아이디입니다. 다른 아이디를 입력하거나 로그인하세요.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
+        return;
+      }
+
+      const pwHash = await hashPassword(rawPw);
+      const newProfile = {
+        userId: rawId,
+        pwHash,
+        rp3: 1000,
+        rp4: 1000,
+        wins3: 0,
+        losses3: 0,
+        wins4: 0,
+        losses4: 0,
+        createdAt: Date.now()
+      };
+      await userRef.set(newProfile);
+
+      gameState.ranked.user = { ...newProfile, safeKey };
+      localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
+      document.getElementById('ranked-auth-pw').value = '';
+      updateRankedAccountUI();
+      showToast(`회원가입 완료! [${rawId}] 님 환영합니다 (초기 1,000 RP)`, 'emerald');
+    }
+
+    async function handleRankedLogin() {
+      if (!rtdb) {
+        showToast('Firebase 데이터베이스 연결을 확인해 주세요.', 'rose');
+        return;
+      }
+      const rawId = document.getElementById('ranked-auth-id').value.trim();
+      const rawPw = document.getElementById('ranked-auth-pw').value;
+      const msgEl = document.getElementById('ranked-auth-msg');
+
+      if (!rawId || !rawPw) {
+        msgEl.textContent = '⚠️ 아이디와 비밀번호를 모두 입력해 주세요.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
+        return;
+      }
+
+      const safeKey = sanitizeFirebaseKey(rawId);
+      const snap = await rtdb.ref(`rankedUsers/${safeKey}`).get();
+      if (!snap.exists()) {
+        msgEl.textContent = '⚠️ 존재하지 않는 아이디입니다. 회원가입을 먼저 진행해 주세요.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
+        return;
+      }
+
+      const val = snap.val();
+      const pwHash = await hashPassword(rawPw);
+      if (val.pwHash !== pwHash) {
+        msgEl.textContent = '⚠️ 비밀번호가 일치하지 않습니다.';
+        msgEl.className = 'text-[11px] text-rose-400 font-bold';
+        return;
+      }
+
+      gameState.ranked.user = {
+        userId: val.userId,
+        safeKey,
+        rp3: val.rp3 ?? 1000,
+        rp4: val.rp4 ?? 1000,
+        wins3: val.wins3 ?? 0,
+        losses3: val.losses3 ?? 0,
+        wins4: val.wins4 ?? 0,
+        losses4: val.losses4 ?? 0
+      };
+      localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
+      document.getElementById('ranked-auth-pw').value = '';
+      updateRankedAccountUI();
+      showToast(`[${val.userId}] 님 로그인 성공!`, 'emerald');
+    }
+
+    function handleRankedLogout() {
+      cancelRankedMatchmaking();
+      gameState.ranked.user = null;
+      localStorage.removeItem(RANKED_SESSION_KEY);
+      updateRankedAccountUI();
+      showToast('로그아웃되었습니다.', 'slate');
+    }
+
+    function cancelRankedMatchmaking() {
+      if (gameState.ranked.searchTimer) {
+        clearInterval(gameState.ranked.searchTimer);
+        gameState.ranked.searchTimer = null;
+      }
+      if (gameState.ranked.queueRef) {
+        try {
+          gameState.ranked.queueRef.off();
+          gameState.ranked.queueRef.remove();
+        } catch (_) {}
+        gameState.ranked.queueRef = null;
+      }
+      gameState.ranked.searching = false;
+      const cancelBtn = document.getElementById('btn-ranked-cancel');
+      if (cancelBtn) cancelBtn.classList.add('hidden');
+      const stEl = document.getElementById('ranked-match-status');
+      if (stEl) stEl.textContent = '하단 버튼을 누르면 비슷한 점수대 상대를 자동으로 찾습니다.';
+      refreshStartButtonLabel();
+    }
+
+    async function startRankedMatchmaking() {
+      if (!rtdb) {
+        showToast('Firebase 연결을 확인해 주세요.', 'rose');
+        return;
+      }
+      if (!gameState.ranked.user) {
+        showToast('랭크전은 아이디·비밀번호 로그인 후 이용할 수 있습니다.', 'amber');
+        return;
+      }
+      if (gameState.ranked.searching) return;
+
+      await refreshLoggedInUserFromDB();
+      const user = gameState.ranked.user;
+      const mode = draftMode;
+      const myRp = mode === '3ball' ? user.rp3 : user.rp4;
+      const queuePath = `rankedQueue/${mode}`;
+      const myQueueRef = rtdb.ref(`${queuePath}/${user.safeKey}`);
+
+      gameState.ranked.searching = true;
+      gameState.ranked.queueRef = myQueueRef;
+      gameState.ranked.searchStartTime = Date.now();
+      gameState.ranked.settled = false;
+
+      document.getElementById('btn-ranked-cancel').classList.remove('hidden');
+      const stEl = document.getElementById('ranked-match-status');
+      stEl.textContent = `🔍 [${mode === '3ball' ? '3구' : '4구'} · ${myRp} RP] 비슷한 점수대 상대 탐색 중...`;
+      refreshStartButtonLabel();
+
+      const entryData = {
+        userId: user.userId,
+        safeKey: user.safeKey,
+        rp: myRp,
+        targetScore: parseInt(document.getElementById('sel-target-score').value, 10),
+        threeCushionFinish: draftLastCushionEnabled,
+        finishTargetCount: draftFinishTargetCount,
+        minusEnabled: draftMinusEnabled,
+        backMinusEnabled: draftMinusEnabled && draftBackMinusEnabled,
+        timestamp: Date.now(),
+        matchedRoomCode: null,
+        role: null
+      };
+
+      await myQueueRef.set(entryData);
+      myQueueRef.onDisconnect().remove();
+
+      // 상대방에 의해 매칭되었을 때 수신
+      myQueueRef.on('value', async (snap) => {
+        const val = snap.val();
+        if (!val || !gameState.ranked.searching) return;
+        if (val.matchedRoomCode && val.role === 2) {
+          const roomCode = val.matchedRoomCode;
+          cancelRankedMatchmaking();
+          await enterRankedRoomAsGuest(roomCode);
+        }
+      });
+
+      // 주기적으로 비슷한 점수대 상대 검색 및 트랜잭션 매칭
+      gameState.ranked.searchTimer = setInterval(async () => {
+        if (!gameState.ranked.searching) return;
+        const elapsedSec = Math.floor((Date.now() - gameState.ranked.searchStartTime) / 1000);
+        const allowedDiff = 150 + elapsedSec * 40;
+        stEl.textContent = `🔍 비슷한 점수대 탐색 중 (${elapsedSec}초 · 허용 점수차 ±${allowedDiff} RP)...`;
+
+        try {
+          const listSnap = await rtdb.ref(queuePath).get();
+          if (!listSnap.exists() || !gameState.ranked.searching) return;
+
+          const candidates = [];
+          listSnap.forEach(child => {
+            const c = child.val();
+            if (!c || c.safeKey === user.safeKey) return;
+            if (c.matchedRoomCode) return;
+            if (Date.now() - (c.timestamp || 0) > 120000) return;
+            const diff = Math.abs((c.rp || 1000) - myRp);
+            if (diff <= allowedDiff) {
+              candidates.push({ ...c, diff });
+            }
+          });
+
+          if (candidates.length === 0) return;
+          candidates.sort((a, b) => a.diff - b.diff);
+          const bestOpp = candidates[0];
+
+          const roomCode = 'RK_' + generateRoomCode();
+          const oppRef = rtdb.ref(`${queuePath}/${bestOpp.safeKey}`);
+          const txResult = await oppRef.transaction((curr) => {
+            if (!curr || curr.matchedRoomCode) return;
+            return { ...curr, matchedRoomCode: roomCode, role: 2 };
+          });
+
+          if (txResult.committed) {
+            cancelRankedMatchmaking();
+            await createAndEnterRankedRoomAsHost(roomCode, entryData, bestOpp);
+          }
+        } catch (err) {
+          console.error('Ranked matchmaking tick error:', err);
+        }
+      }, 1300);
+    }
+
+    async function createAndEnterRankedRoomAsHost(roomCode, myEntry, oppEntry) {
+      gameState.mode = draftMode;
+      gameState.players = 'ranked';
+      gameState.targetScore = myEntry.targetScore;
+      gameState.threeCushionFinish = myEntry.threeCushionFinish;
+      gameState.finishTargetCount = myEntry.finishTargetCount;
+      gameState.finishWins = { 1: 0, 2: 0 };
+      gameState.minusEnabled = myEntry.minusEnabled;
+      gameState.backMinusEnabled = myEntry.backMinusEnabled;
+      gameState.scores = { 1: 0, 2: 0 };
+      gameState.currentPlayer = 1;
+      gameState.inning = 1;
+      gameState.currentRun = 0;
+
+      gameState.ranked.p1Info = { userId: myEntry.userId, safeKey: myEntry.safeKey, rp: myEntry.rp };
+      gameState.ranked.p2Info = { userId: oppEntry.userId, safeKey: oppEntry.safeKey, rp: oppEntry.rp };
+      gameState.ranked.settled = false;
+
+      setupBalls();
+
+      gameState.online.active = true;
+      gameState.online.roomCode = roomCode;
+      gameState.online.myRole = 1;
+      gameState.online.guestJoined = true;
+      gameState.online.lastShotId = 0;
+      gameState.online.lastSyncId = 0;
+      gameState.online.lastLeftId = 0;
+
+      await rtdb.ref(`rooms/${roomCode}`).set({
+        roomCode,
+        isRanked: true,
+        mode: gameState.mode,
+        targetScore: gameState.targetScore,
+        threeCushionFinish: gameState.threeCushionFinish,
+        finishTargetCount: gameState.finishTargetCount,
+        minusEnabled: gameState.minusEnabled,
+        backMinusEnabled: gameState.backMinusEnabled,
+        p1Info: gameState.ranked.p1Info,
+        p2Info: gameState.ranked.p2Info,
+        guestJoined: true,
+        matchStarted: true,
+        initBalls: serializeBalls(),
+        createdAt: Date.now()
+      });
+
+      attachRoomListeners(roomCode);
+      launchMatchHUDAndPage();
+      showToast(`랭크 매칭 성사! vs ${oppEntry.userId} (${oppEntry.rp} RP)`, 'emerald', 3000);
+    }
+
+    async function enterRankedRoomAsGuest(roomCode) {
+      const ref = rtdb.ref(`rooms/${roomCode}`);
+      let data = null;
+      for (let i = 0; i < 10; i++) {
+        const snap = await ref.get();
+        if (snap.exists() && snap.val().matchStarted) {
+          data = snap.val();
+          break;
+        }
+        await new Promise(r => setTimeout(r, 250));
+      }
+      if (!data) {
+        showToast('매칭 방 정보를 불러오지 못했습니다. 다시 시도해 주세요.', 'rose');
+        return;
+      }
+
+      gameState.mode = data.mode || '3ball';
+      gameState.players = 'ranked';
+      gameState.targetScore = data.targetScore || 30;
+      gameState.threeCushionFinish = Boolean(data.threeCushionFinish);
+      gameState.finishTargetCount = data.finishTargetCount || 1;
+      gameState.finishWins = { 1: 0, 2: 0 };
+      gameState.minusEnabled = data.minusEnabled !== undefined ? Boolean(data.minusEnabled) : true;
+      gameState.backMinusEnabled = Boolean(data.backMinusEnabled);
+      gameState.scores = { 1: 0, 2: 0 };
+      gameState.currentPlayer = 1;
+      gameState.inning = 1;
+      gameState.currentRun = 0;
+
+      gameState.ranked.p1Info = data.p1Info || { userId: '1P', safeKey: '', rp: 1000 };
+      gameState.ranked.p2Info = data.p2Info || { userId: '2P', safeKey: '', rp: 1000 };
+      gameState.ranked.settled = false;
+
+      gameState.online.active = true;
+      gameState.online.roomCode = roomCode;
+      gameState.online.myRole = 2;
+      gameState.online.guestJoined = true;
+      gameState.online.lastShotId = 0;
+      gameState.online.lastSyncId = 0;
+      gameState.online.lastLeftId = 0;
+
+      setupBalls();
+      if (Array.isArray(data.initBalls)) {
+        applyBallPositions(data.initBalls);
+      }
+
+      attachRoomListeners(roomCode);
+      launchMatchHUDAndPage();
+      showToast(`랭크 매칭 성사! vs ${gameState.ranked.p1Info.userId} (${gameState.ranked.p1Info.rp} RP)`, 'emerald', 3000);
+    }
+
+    function launchMatchHUDAndPage() {
+      gameState.started = true;
+      gameState.gameOver = false;
+      applyModeAndPlayerBadges();
+      document.getElementById('hud-inning-badge').textContent = `${gameState.inning}이닝`;
+      document.getElementById('hud-run').textContent = `연속 ${gameState.currentRun}`;
+      updateScoreboard();
+      updateOnlineBanner();
+      document.getElementById('gameover-modal').classList.add('hidden');
+      document.getElementById('rematch-modal').classList.add('hidden');
+      document.getElementById('ball-choice-modal').classList.add('hidden');
+      enterGamePage(true);
+    }
+
+    function calcRankedDelta(winnerRp, loserRp) {
+      const expected = 1 / (1 + Math.pow(10, (loserRp - winnerRp) / 400));
+      return Math.max(10, Math.min(40, Math.round(32 * (1 - expected))));
+    }
+
+    async function settleRankedMatch(winnerRole) {
+      if (gameState.players !== 'ranked' || gameState.ranked.settled) return;
+      gameState.ranked.settled = true;
+
+      const p1 = gameState.ranked.p1Info;
+      const p2 = gameState.ranked.p2Info;
+      if (!p1 || !p2 || !rtdb) return;
+
+      const is3Ball = gameState.mode === '3ball';
+      const rpKey = is3Ball ? 'rp3' : 'rp4';
+      const winKey = is3Ball ? 'wins3' : 'wins4';
+      const lossKey = is3Ball ? 'losses3' : 'losses4';
+
+      const winnerInfo = winnerRole === 1 ? p1 : p2;
+      const loserInfo = winnerRole === 1 ? p2 : p1;
+      const delta = calcRankedDelta(winnerInfo.rp || 1000, loserInfo.rp || 1000);
+
+      // 승자 클라이언트(또는 단일 정산 주체)가 양쪽 RP를 DB에 반영
+      if (winnerRole === gameState.online.myRole && winnerInfo.safeKey && loserInfo.safeKey) {
+        try {
+          await rtdb.ref(`rankedUsers/${winnerInfo.safeKey}`).transaction(curr => {
+            if (!curr) return curr;
+            return {
+              ...curr,
+              [rpKey]: (curr[rpKey] ?? 1000) + delta,
+              [winKey]: (curr[winKey] ?? 0) + 1
+            };
+          });
+          await rtdb.ref(`rankedUsers/${loserInfo.safeKey}`).transaction(curr => {
+            if (!curr) return curr;
+            return {
+              ...curr,
+              [rpKey]: Math.max(0, (curr[rpKey] ?? 1000) - delta),
+              [lossKey]: (curr[lossKey] ?? 0) + 1
+            };
+          });
+        } catch (err) {
+          console.error('Ranked settlement error:', err);
+        }
+      }
+
+      // 내 로컬 프로필 수치 즉시 반영
+      if (gameState.ranked.user) {
+        const iWon = winnerRole === gameState.online.myRole;
+        const prevRp = gameState.ranked.user[rpKey] ?? 1000;
+        const nextRp = iWon ? prevRp + delta : Math.max(0, prevRp - delta);
+        gameState.ranked.user[rpKey] = nextRp;
+        if (iWon) gameState.ranked.user[winKey] = (gameState.ranked.user[winKey] ?? 0) + 1;
+        else gameState.ranked.user[lossKey] = (gameState.ranked.user[lossKey] ?? 0) + 1;
+
+        localStorage.setItem(RANKED_SESSION_KEY, JSON.stringify(gameState.ranked.user));
+        updateRankedAccountUI();
+
+        const deltaBox = document.getElementById('go-ranked-delta');
+        deltaBox.textContent = iWon
+          ? `🏆 랭킹 점수 상승: +${delta} RP (현재 ${nextRp} RP)`
+          : `📉 랭킹 점수 하락: -${delta} RP (현재 ${nextRp} RP)`;
+        deltaBox.className = iWon
+          ? 'mb-4 px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/60 text-sm font-black text-emerald-300'
+          : 'mb-4 px-3.5 py-2 rounded-xl bg-rose-500/20 border border-rose-400/60 text-sm font-black text-rose-300';
+      }
+    }
+
+    function finishRankedMatchUI(winnerRole, customSubtext = null) {
+      gameState.gameOver = true;
+      settleRankedMatch(winnerRole);
+      showGameOverModal(winnerRole, customSubtext);
+    }
+
+    function handleOpponentLeftRankedRoom() {
+      if (gameState.gameOver) return;
+      closeConfirmModal();
+      const myRole = gameState.online.myRole;
+      showToast('상대방이 기권하여 승리했습니다!', 'emerald', 3000);
+      finishRankedMatchUI(myRole, '상대방이 기권(퇴장)하여 승리했습니다.');
+    }
+
+    // 랭킹표 전용 페이지 열기/닫기/렌더링
+    async function loadAndRenderRankingTable(mode = gameState.ranked.tabMode) {
+      gameState.ranked.tabMode = mode;
+      const tab3 = document.getElementById('tab-rank-3ball');
+      const tab4 = document.getElementById('tab-rank-4ball');
+      if (mode === '3ball') {
+        tab3.className = 'px-4 py-2 rounded-xl bg-blue-600 text-white font-black text-xs sm:text-sm border border-blue-400 transition';
+        tab4.className = 'px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs sm:text-sm border border-slate-700 transition';
+      } else {
+        tab4.className = 'px-4 py-2 rounded-xl bg-rose-600 text-white font-black text-xs sm:text-sm border border-rose-400 transition';
+        tab3.className = 'px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs sm:text-sm border border-slate-700 transition';
+      }
+
+      const tbody = document.getElementById('ranking-tbody');
+      const mySummary = document.getElementById('ranking-my-summary');
+      tbody.innerHTML = '<tr><td colspan="4" class="py-12 text-center text-slate-400">랭킹 데이터를 불러오는 중입니다...</td></tr>';
+
+      if (!rtdb) {
+        tbody.innerHTML = '<tr><td colspan="4" class="py-12 text-center text-rose-400">데이터베이스에 연결할 수 없습니다.</td></tr>';
+        return;
+      }
+
+      try {
+        const snap = await rtdb.ref('rankedUsers').get();
+        if (!snap.exists()) {
+          tbody.innerHTML = '<tr><td colspan="4" class="py-12 text-center text-slate-400">아직 등록된 랭킹 유저가 없습니다. 랭크전에서 첫 승리를 기록해 보세요!</td></tr>';
+          return;
+        }
+
+        const list = [];
+        snap.forEach(child => {
+          const v = child.val();
+          if (!v || !v.userId) return;
+          const rp = mode === '3ball' ? (v.rp3 ?? 1000) : (v.rp4 ?? 1000);
+          const wins = mode === '3ball' ? (v.wins3 ?? 0) : (v.wins4 ?? 0);
+          const losses = mode === '3ball' ? (v.losses3 ?? 0) : (v.losses4 ?? 0);
+          list.push({ userId: v.userId, safeKey: child.key, rp, wins, losses });
+        });
+
+        list.sort((a, b) => b.rp - a.rp || b.wins - a.wins);
+
+        if (gameState.ranked.user) {
+          const myIdx = list.findIndex(item => item.safeKey === gameState.ranked.user.safeKey);
+          if (myIdx >= 0) {
+            const me = list[myIdx];
+            mySummary.textContent = `내 순위: ${myIdx + 1}위 (${me.userId} · ${me.rp} RP · ${me.wins}승 ${me.losses}패)`;
+          }
+        } else {
+          mySummary.textContent = '랭크전 로그인 시 내 순위가 표시됩니다.';
+        }
+
+        tbody.innerHTML = '';
+        list.slice(0, 100).forEach((item, idx) => {
+          const rank = idx + 1;
+          const isMe = gameState.ranked.user && item.safeKey === gameState.ranked.user.safeKey;
+          const rankBadge = rank === 1 ? '🥇 1위' : rank === 2 ? '🥈 2위' : rank === 3 ? '🥉 3위' : `${rank}위`;
+          const tr = document.createElement('tr');
+          tr.className = isMe
+            ? 'bg-amber-500/15 hover:bg-amber-500/20 transition'
+            : 'hover:bg-slate-900/60 transition';
+          tr.innerHTML = `
+            <td class="py-3.5 px-4 sm:px-6 text-center font-black ${rank <= 3 ? 'text-amber-300' : 'text-slate-300'}">${rankBadge}</td>
+            <td class="py-3.5 px-4 sm:px-6 font-bold text-white">
+              ${item.userId}
+              ${isMe ? '<span class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">나</span>' : ''}
+            </td>
+            <td class="py-3.5 px-4 sm:px-6 text-right font-black text-cyan-300">${item.rp.toLocaleString()} RP</td>
+            <td class="py-3.5 px-4 sm:px-6 text-right text-slate-300 font-semibold">${item.wins}승 ${item.losses}패</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Ranking load error:', err);
+        tbody.innerHTML = '<tr><td colspan="4" class="py-12 text-center text-rose-400">랭킹표를 불러오는 중 오류가 발생했습니다.</td></tr>';
+      }
+    }
+
+    /**
+     * =========================================================================
+     * 8.5 FIREBASE ONLINE FRIEND ROOM CREATION & JOINING
      * =========================================================================
      */
     function generateRoomCode() {
@@ -2767,8 +3473,13 @@
       }
 
       const data = snap.val() || {};
+      if (data.isRanked) {
+        showToast('랭크전 매칭 방에는 방 코드로 참가할 수 없습니다.', 'rose');
+        return false;
+      }
+
       gameState.mode = data.mode || '3ball';
-      gameState.targetScore = data.targetScore || 100;
+      gameState.targetScore = data.targetScore || 30;
       gameState.threeCushionFinish = Boolean(data.threeCushionFinish);
       gameState.finishTargetCount = data.finishTargetCount || 1;
       gameState.finishWins = { 1: 0, 2: 0 };
@@ -3257,6 +3968,7 @@
     function enterGamePage(withLoading = true) {
       const switchView = () => {
         document.getElementById('start-modal').classList.add('hidden');
+        document.getElementById('ranking-page').classList.add('hidden');
         document.getElementById('game-page').classList.remove('hidden');
         syncViewportAspect();
       };
@@ -3275,10 +3987,12 @@
 
     function returnToSelectPage(withLoading = true) {
       closeConfirmModal();
+      cancelRankedMatchmaking();
       const switchBack = () => {
         document.getElementById('gameover-modal').classList.add('hidden');
         document.getElementById('rematch-modal').classList.add('hidden');
         document.getElementById('ball-choice-modal').classList.add('hidden');
+        document.getElementById('ranking-page').classList.add('hidden');
         document.getElementById('game-page').classList.add('hidden');
         document.getElementById('start-modal').classList.remove('hidden');
       };
@@ -3299,6 +4013,13 @@
       const ref = gameState.online.roomRef;
       const wasGuestJoined = gameState.online.guestJoined;
       const myRole = gameState.online.myRole;
+      const wasRanked = gameState.players === 'ranked';
+
+      // 랭크전 경기 중 나가는 경우 패배 정산
+      if (wasRanked && wasGuestJoined && !gameState.gameOver && !gameState.ranked.settled) {
+        const oppRole = myRole === 1 ? 2 : 1;
+        await settleRankedMatch(oppRole);
+      }
 
       detachOnlineRoom();
       gameState.online.active = false;
@@ -3471,12 +4192,12 @@
     });
 
     document.getElementById('btn-reset-game').addEventListener('click', () => {
-      if (gameState.players === 'online') return;
+      if (isNetworkMatch()) return;
       openConfirmModal('reset', '게임을 초기화하겠습니까?');
     });
 
     document.getElementById('btn-surrender').addEventListener('click', () => {
-      if (gameState.players !== 'online') return;
+      if (!isNetworkMatch()) return;
       openConfirmModal('surrender', '게임을 포기하고 항복하겠습니까?');
     });
 
@@ -3488,7 +4209,7 @@
       closeConfirmModal();
     });
 
-    document.getElementById('btn-confirm-yes').addEventListener('click', () => {
+    document.getElementById('btn-confirm-yes').addEventListener('click', async () => {
       const action = pendingConfirmAction;
       closeConfirmModal();
 
@@ -3496,6 +4217,23 @@
         resetGameStateAndBalls();
         showToast('게임을 초기화하였습니다.', 'slate', 3000);
       } else if (action === 'surrender') {
+        if (gameState.players === 'ranked') {
+          const oppRole = gameState.online.myRole === 1 ? 2 : 1;
+          if (gameState.online.roomRef) {
+            try {
+              await gameState.online.roomRef.update({
+                playerLeft: {
+                  leftId: Date.now() + Math.floor(Math.random() * 10000),
+                  leaverRole: gameState.online.myRole,
+                  leftAt: Date.now()
+                }
+              });
+            } catch (_) {}
+          }
+          finishRankedMatchUI(oppRole, '항복하여 패배했습니다.');
+          return;
+        }
+
         resetGameStateAndBalls();
         updateOnlineBanner();
         showToast('항복하셨습니다.', 'rose', 3000);
@@ -3511,7 +4249,7 @@
           }
         }
       } else if (action === 'exit') {
-        if (gameState.players === 'online') {
+        if (isNetworkMatch()) {
           leaveOnlineRoomAndReturnToMenu();
         } else {
           gameState.started = false;
@@ -3524,7 +4262,7 @@
 
     document.getElementById('hud-room-pill').addEventListener('click', () => {
       const code = gameState.online.roomCode;
-      if (!code) return;
+      if (!code || gameState.players === 'ranked') return;
       const tmp = document.createElement('textarea');
       tmp.value = code;
       document.body.appendChild(tmp);
@@ -3576,7 +4314,7 @@
 
     /**
      * =========================================================================
-     * 10. START MENU & MATCH INITIALIZATION (FIXED SLOT POSITIONS)
+     * 10. START MENU, TARGET SCORE OPTIONS & RANKING PAGE NAVIGATION
      * =========================================================================
      */
     let draftMode = '3ball';
@@ -3587,8 +4325,20 @@
     let draftMinusEnabled = true;
     let draftBackMinusEnabled = false;
 
+    function populateTargetScoreOptions(mode = draftMode) {
+      const sel = document.getElementById('sel-target-score');
+      sel.innerHTML = '';
+      const scores = mode === '3ball' ? [30, 40, 50] : [100, 300, 500, 1000];
+      scores.forEach((score, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(score);
+        opt.textContent = idx === 0 ? `${score}점 (표준)` : `${score}점`;
+        if (idx === 0) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
     function refresh4BallOptionButtons() {
-      // Last Cushion Toggle
       document.querySelectorAll('.lastcush-toggle-btn').forEach(btn => {
         const active = (btn.dataset.lastcush === 'on') === draftLastCushionEnabled;
         btn.className = active
@@ -3596,7 +4346,6 @@
           : 'lastcush-toggle-btn px-2.5 py-1 rounded-md text-[11px] font-bold border border-slate-700 bg-slate-800 text-slate-300 transition';
       });
 
-      // Last Cushion Count (1~3)
       const countGroup = document.getElementById('lastcush-count-group');
       if (draftLastCushionEnabled) {
         countGroup.classList.remove('opacity-40', 'pointer-events-none');
@@ -3611,7 +4360,6 @@
           : 'cushcount-btn px-2.5 py-0.5 rounded-md text-[11px] font-bold border border-slate-700 bg-slate-800 text-slate-300 transition';
       });
 
-      // Minus ('빡') Toggle
       document.querySelectorAll('.minus-toggle-btn').forEach(btn => {
         const active = (btn.dataset.minus === 'on') === draftMinusEnabled;
         btn.className = active
@@ -3619,7 +4367,6 @@
           : 'minus-toggle-btn px-2.5 py-1 rounded-md text-[11px] font-bold border border-slate-700 bg-slate-800 text-slate-300 transition';
       });
 
-      // Back Minus ('뒷 빡') Toggle
       const backMinusRow = document.getElementById('backminus-row');
       if (draftMinusEnabled) {
         backMinusRow.classList.remove('opacity-40', 'pointer-events-none');
@@ -3638,20 +4385,24 @@
     function updateStartScreenVisibility() {
       const isJoiningOnline = draftPlayers === 'online' && draftOnlineAction === 'join';
 
-      // Left fixed slot: Online Lobby
       const onlineSlot = document.getElementById('online-lobby-slot');
       const onlineBox = document.getElementById('online-lobby-box');
+      const rankedBox = document.getElementById('ranked-lobby-box');
+
       if (draftPlayers === 'online') {
-        onlineSlot.className = 'block min-h-[188px] lg:h-[188px]';
-        onlineBox.classList.remove('invisible', 'opacity-0', 'pointer-events-none');
-        onlineBox.classList.add('opacity-100');
+        onlineSlot.className = 'block min-h-[214px] lg:h-[214px]';
+        onlineBox.classList.remove('hidden');
+        rankedBox.classList.add('hidden');
+      } else if (draftPlayers === 'ranked') {
+        onlineSlot.className = 'block min-h-[214px] lg:h-[214px]';
+        onlineBox.classList.add('hidden');
+        rankedBox.classList.remove('hidden');
       } else {
-        onlineSlot.className = 'hidden lg:block lg:h-[188px]';
-        onlineBox.classList.add('invisible', 'opacity-0', 'pointer-events-none');
-        onlineBox.classList.remove('opacity-100');
+        onlineSlot.className = 'hidden lg:block lg:h-[214px]';
+        onlineBox.classList.add('hidden');
+        rankedBox.classList.add('hidden');
       }
 
-      // Right top: Target score dim when joining room
       const matchOptionsRow = document.getElementById('match-options-row');
       if (isJoiningOnline) {
         matchOptionsRow.classList.add('opacity-40', 'pointer-events-none');
@@ -3659,7 +4410,6 @@
         matchOptionsRow.classList.remove('opacity-40', 'pointer-events-none');
       }
 
-      // Right fixed slot: 4-Ball Options Panel
       const slot4Ball = document.getElementById('opt-4ball-slot');
       const panel4Ball = document.getElementById('opt-4ball-panel');
       if (draftMode === '4ball' && !isJoiningOnline) {
@@ -3675,13 +4425,15 @@
 
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (gameState.ranked.searching) cancelRankedMatchmaking();
         draftMode = btn.dataset.mode;
         document.querySelectorAll('.mode-btn').forEach(b => {
           const active = b.dataset.mode === draftMode;
           b.className = active
-            ? 'mode-btn p-4 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-left transition h-[106px] flex flex-col justify-center'
-            : 'mode-btn p-4 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-left transition h-[106px] flex flex-col justify-center';
+            ? 'mode-btn p-3.5 sm:p-4 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-left transition min-h-[92px] sm:h-[106px] flex flex-col justify-center'
+            : 'mode-btn p-3.5 sm:p-4 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-left transition min-h-[92px] sm:h-[106px] flex flex-col justify-center';
         });
+        populateTargetScoreOptions(draftMode);
         updateStartScreenVisibility();
       });
     });
@@ -3724,6 +4476,12 @@
         btnStart.textContent = draftOnlineAction === 'host'
           ? '🌐 온라인 방 만들기 & 시작'
           : '🔑 방 코드로 온라인 입장';
+      } else if (draftPlayers === 'ranked') {
+        if (gameState.ranked.searching) {
+          btnStart.textContent = '⏳ 비슷한 점수대 상대 매칭 중...';
+        } else {
+          btnStart.textContent = '🏆 랭크전 랜덤 매칭 시작';
+        }
       } else {
         btnStart.textContent = '게임 시작하기';
       }
@@ -3731,12 +4489,13 @@
 
     document.querySelectorAll('.player-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (gameState.ranked.searching) cancelRankedMatchmaking();
         draftPlayers = btn.dataset.players;
         document.querySelectorAll('.player-btn').forEach(b => {
           const active = b.dataset.players === draftPlayers;
           b.className = active
-            ? 'player-btn p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition h-[76px] flex flex-col items-center justify-center'
-            : 'player-btn p-3.5 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition h-[76px] flex flex-col items-center justify-center';
+            ? 'player-btn p-2.5 sm:p-3 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center'
+            : 'player-btn p-2.5 sm:p-3 rounded-xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-500 text-center transition min-h-[72px] sm:h-[76px] flex flex-col items-center justify-center';
         });
 
         updateStartScreenVisibility();
@@ -3764,13 +4523,50 @@
       refreshStartButtonLabel();
     });
 
+    document.getElementById('btn-ranked-register').addEventListener('click', handleRankedRegister);
+    document.getElementById('btn-ranked-login').addEventListener('click', handleRankedLogin);
+    document.getElementById('btn-ranked-logout').addEventListener('click', handleRankedLogout);
+    document.getElementById('btn-ranked-cancel').addEventListener('click', cancelRankedMatchmaking);
+
+    // 랭킹표 전용 페이지 이벤트
+    document.getElementById('btn-open-ranking').addEventListener('click', () => {
+      runWithLoadingScreen(
+        '랭킹표 불러오는 중...',
+        '실시간 랭크전 순위를 조회하고 있습니다',
+        () => {
+          document.getElementById('start-modal').classList.add('hidden');
+          document.getElementById('game-page').classList.add('hidden');
+          document.getElementById('ranking-page').classList.remove('hidden');
+          loadAndRenderRankingTable(draftMode);
+        },
+        420
+      );
+    });
+
+    document.getElementById('btn-close-ranking').addEventListener('click', () => {
+      document.getElementById('ranking-page').classList.add('hidden');
+      document.getElementById('start-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-refresh-ranking').addEventListener('click', () => {
+      loadAndRenderRankingTable(gameState.ranked.tabMode);
+    });
+
+    document.getElementById('tab-rank-3ball').addEventListener('click', () => {
+      loadAndRenderRankingTable('3ball');
+    });
+
+    document.getElementById('tab-rank-4ball').addEventListener('click', () => {
+      loadAndRenderRankingTable('4ball');
+    });
+
     function applyModeAndPlayerBadges() {
       const modeBadge = document.getElementById('hud-mode-badge');
       const ruleBar = document.getElementById('rule-summary-bar');
       if (gameState.mode === '3ball') {
         modeBadge.textContent = '3구 (쓰리쿠션)';
         modeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-600 text-white';
-        ruleBar.textContent = '2적구 접촉 전 3쿠션 이상 선행 필수 (+10점)';
+        ruleBar.textContent = '2적구 접촉 전 3쿠션 이상 선행 필수 (+1점)';
       } else {
         modeBadge.textContent = '4구 (사구)';
         modeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-600 text-white';
@@ -3788,7 +4584,16 @@
       const resetBtn = document.getElementById('btn-reset-game');
       const surrenderBtn = document.getElementById('btn-surrender');
 
-      if (gameState.players === 'online') {
+      if (gameState.players === 'ranked') {
+        const p1Name = gameState.ranked.p1Info ? `${gameState.ranked.p1Info.userId} (${gameState.ranked.p1Info.rp}RP)` : '1P 흰공';
+        const p2Name = gameState.ranked.p2Info ? `${gameState.ranked.p2Info.userId} (${gameState.ranked.p2Info.rp}RP)` : '2P 노란공';
+        playBadge.textContent = '🏆 랭크전';
+        document.getElementById('p1-label').textContent = gameState.online.myRole === 1 ? `${p1Name} [나]` : p1Name;
+        document.getElementById('p2-label').textContent = gameState.online.myRole === 2 ? `${p2Name} [나]` : p2Name;
+        roomPill.classList.add('hidden');
+        resetBtn.classList.add('hidden');
+        surrenderBtn.classList.remove('hidden');
+      } else if (gameState.players === 'online') {
         playBadge.textContent = gameState.online.myRole === 1 ? '온라인 (나: 1P 흰공)' : '온라인 (나: 2P 노란공)';
         document.getElementById('p1-label').textContent = gameState.online.myRole === 1 ? '1P 흰공 (나)' : '1P 흰공 (상대)';
         document.getElementById('p2-label').textContent = gameState.online.myRole === 2 ? '2P 노란공 (나)' : '2P 노란공 (상대)';
@@ -3808,6 +4613,11 @@
 
     async function startMatch(useLoading = true) {
       sound.unlock();
+      if (draftPlayers === 'ranked') {
+        await startRankedMatchmaking();
+        return;
+      }
+
       gameState.mode = draftMode;
       gameState.players = draftPlayers;
       gameState.targetScore = parseInt(document.getElementById('sel-target-score').value, 10);
@@ -3854,7 +4664,7 @@
 
     document.getElementById('btn-start').addEventListener('click', () => startMatch(true));
     document.getElementById('btn-rematch').addEventListener('click', () => {
-      if (gameState.players === 'online') {
+      if (isNetworkMatch()) {
         returnToSelectPage(true);
       } else {
         startMatch(false);
@@ -3867,7 +4677,7 @@
       enterGamePage(true);
     });
     document.getElementById('btn-go-menu').addEventListener('click', () => {
-      if (gameState.players === 'online') {
+      if (isNetworkMatch()) {
         leaveOnlineRoomAndReturnToMenu();
       } else {
         gameState.started = false;
@@ -3902,20 +4712,16 @@
       requestAnimationFrame(animate);
     }
 
-    function populateTargetScoreOptions() {
-      const sel = document.getElementById('sel-target-score');
-      sel.innerHTML = '';
-      for (let score = 10; score <= 1000; score += 10) {
-        const opt = document.createElement('option');
-        opt.value = String(score);
-        opt.textContent = score === 100 ? '100점 (표준)' : `${score}점`;
-        if (score === 100) opt.selected = true;
-        sel.appendChild(opt);
-      }
-    }
-
     window.onload = function () {
-      populateTargetScoreOptions();
+      try {
+        const saved = localStorage.getItem(RANKED_SESSION_KEY);
+        if (saved) {
+          gameState.ranked.user = JSON.parse(saved);
+          refreshLoggedInUserFromDB();
+        }
+      } catch (_) {}
+      updateRankedAccountUI();
+      populateTargetScoreOptions('3ball');
       refresh4BallOptionButtons();
       updateStartScreenVisibility();
       syncViewportAspect();
